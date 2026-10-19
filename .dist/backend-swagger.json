@@ -1,0 +1,6135 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "Alaa Eldien Platform API",
+    "description": "# Phase 1\n\n_________________________________\n\n## Roles:\n- SuperAdmin\n- Admin\n- Provider\n- Company\n- AlaaEldin\n\n_________________________________\n\n## Service Categories:\n- Car_Care\n- Personal_Care\n- Home_Care\n\n_________________________________\n\n## Supported Languages:\n- ar\n- en\n\n_________________________________\n\n## Appointment:\n### Appointment status flow:\n- Pending\n- ├─ Accepted\n- │  ├─ InProgress\n- │  │  └─ Completed\n- │  └─ Rescheduled\n- │\n- ├─ Rejected\n- └─ Cancelled\n- └─ NoShow\n\n### Appointment Permissions:\n- Accepted: Partner only\n- InProgress: Partner only\n- Rejected: Partner only\r\n- Rescheduled: Customer only\r\n- Completed: Customer only\r\n- Cancelled: Customer only\r\n\r\n### Appointment Final statuses:\r\n- Completed\r\n- Rejected\r\n- Cancelled\r\n- NoShow\r\n\r\nOnce an appointment reaches a final status, it cannot be changed.\n\n_________________________________\n\n## Package Subscription:\n\n### Package Subscription Status Flow:\n\n- Pending\n  - Accepted\n    - InProgress\n      - Completed\n- Rejected\n- Cancelled\n- Failed\n\n### Package Subscription Permissions:\n\n- Accepted: Partner only (create the first occurrence)\n- InProgress: Automatically set when at least one occurrence is completed.\n- Completed: Automatically set when all occurrences are completed.\n- Rejected: Partner only (before accepting).\n- Cancelled: Customer only (before accepting).\n\n- Failed: Automatically set when NoShow occurrences exceed 60% of total occurrences.\n\n### Package Subscription Final Statuses:\n\n- Completed\n- Rejected\n- Cancelled\n- Failed\n\nOnce a Package Subscription reaches a final status, its status cannot be changed.\n\n_________________________________\n## Occurrences Status Flow:\n\n### Occurrences Status Flow:\n\n- Pending\n   - InProgress\n       - Completed\n- NoShow\n\n### Occurrences Permissions:\n\n- Completed: customer only.\n\n### Occurrences Final Statuses:\n\n- Completed\n- NoShow\n\nOnce a Occurrence reaches a final status, its status cannot be changed.\n\n_________________________________\n_________________________________\n# Phase 2\n_________________________________\n- Marketplace\n   - Product Type\n       - Product Category (By Admin)\n           - Product Subcategory (By Admin)\n       - Product Brand (By Admin)\n       - Product Material (By Admin)\n_________________________________\n## The product types available in the marketplace:\n\n- Appliances \n- Car \n- Furniture \n- Pets \n- PetsTool \n- Clothes \n- Electronic \n\n_________________________________\n## The Product Colors (HTML Colors Name):\n\n- Example:\n   - white\n   - lightBlue\n   - green\n   - darkRed\n   - ........\n\n_________________________________\n## Power Type:\n\n- Electric\n- Gas\n- Battery\n- Solar\n- Dual\n\n_________________________________\n## Appliance Capacity Unit:\n\n- Liter\n- Kilogram\n- PlaceSetting\n\n_________________________________\n## Energy Efficiency Rating:\n\n- APlusPlusPlus\n- APlusPlus\n- APlus\n- A\n- B\n- C\n- D\n- E\n- F\n- G\n\n_________________________________\n## Pet Tool Size:\n\n- ExtraSmall\n- Small\n- Medium\n- Large\n- ExtraLarge\n\n_________________________________\n## Pet Gender:\n\n- Male\n- Female\n\n_________________________________\n## Pet Health Condition:\n\n- Healthy\n- Good\n- Fair\n- Poor\n\n_________________________________\n## Product Condition:\n\n- New\n- Used\n\n_________________________________\n## Furniture Usage:\n\n- Home\n- Office\n\n_________________________________\n## Clothes Size:\n\n- ExtraSmall\n- Small\n- Medium\n- Large\n- ExtraLarge\n- DoubleExtraLarge\n\n_________________________________\n## Clothes Gender:\n\n- Male\n- Female\n- Unisex\n\n_________________________________\n## Car Transmission:\n\n- Manual\n- Automatic\n\n_________________________________\n## Car Fuel Type:\n\n- Gasoline\n- Diesel\n- Hybrid\n- Electric\n\n",
+    "version": "v1"
+  },
+  "paths": {
+    "/api/v1/users/me": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get My Information",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Delete My Account",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnautherizedFailure"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWithMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/change-password": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Change Password",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/change-role": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Change Role",
+        "description": "Role changes are allowed only between Customer and Provider. A Customer can switch to Provider, and a Provider can switch to Customer. Changing to the same role or to unsupported roles is not permitted.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/appointments/book/service/{id}": {
+      "post": {
+        "tags": [
+          "Appointment"
+        ],
+        "summary": "Booking",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAppointmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/appointments/availabilities/service/{id}": {
+      "get": {
+        "tags": [
+          "Appointment"
+        ],
+        "summary": "Available Appointments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/appointments": {
+      "get": {
+        "tags": [
+          "Appointment"
+        ],
+        "summary": "Get Appointments",
+        "parameters": [
+          {
+            "name": "maxTotalPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "minTotalPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "governorateId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "neighborhoodId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ByMe",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/appointments/{id}/change-status": {
+      "patch": {
+        "tags": [
+          "Appointment"
+        ],
+        "summary": "Change Status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "securityStamp",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/appointments/{id}/reschedule": {
+      "put": {
+        "tags": [
+          "Appointment"
+        ],
+        "summary": "Reschedule",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleAppointmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/appointments/{id}/completed": {
+      "post": {
+        "tags": [
+          "Appointment"
+        ],
+        "summary": "Complete Appointment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteAppointmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Register",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationFailure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicatedFailue"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWithMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/company/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Register as a company",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterAsCompanyRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterAsCompanyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/validate-unique": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Validate Unique",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "phoneNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nationalId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWithMessage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Login By Email",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginByEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWithMessage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/refresh-token": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Refresh Token",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StringSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnautherizedFailure"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/resend-email-verification": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": " Resend Email Verification",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendEmailVerificationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationFailure"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictFailure"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWithMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/verify-email": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verify Email",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationFailure"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConflictFailure"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWithMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/company/verify-email": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verify Company Email",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyCompanyEmailRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/forget-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Forget Password",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessWithMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/forget-password/verify-otp": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Verify Forget Password OTP",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyForgetPasswordOTPRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/authentication/reset-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Reset Password",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/developer/db/clear": {
+      "delete": {
+        "tags": [
+          "Developer"
+        ],
+        "description": "DEVELOPER ONLY: Permanently hard-deletes all database data except Admin and SuperAdmin users. This operation is irreversible and must not be used or exposed in the production frontend.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/governorates": {
+      "get": {
+        "tags": [
+          "Governorate"
+        ],
+        "summary": "Get All",
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GovernorateResponseDtoListSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationFailure"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/neighborhoods": {
+      "get": {
+        "tags": [
+          "Neighborhood"
+        ],
+        "summary": "Get All",
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "governorateId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeighborhoodResponseDtoListSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationFailure"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/packages": {
+      "post": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Add New Package",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackageRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Get Packages",
+        "description": "Recurrence\n - Daily \r\n- Weekly \r\n- Monthly  ",
+        "parameters": [
+          {
+            "name": "recurrence",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "isMine",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "maxServicePrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "minServicePrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "neighborhoodId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "governorateId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/packages/{id}": {
+      "put": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Update Package",
+        "description": "- Daily schedules allow only 1 day per interval.\r\n- Weekly schedules allow from 1 to 7 days per interval.\r\n- Monthly schedules allow from 1 to 30 days per interval. ",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "2402531c-16ea-4358-8b13-1ddfb106ad2a"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePackageRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePackageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Package"
+        ],
+        "summary": "Delete Package",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/subscriptions/package/{id}": {
+      "post": {
+        "tags": [
+          "Package Subscription"
+        ],
+        "summary": "Subscribe to Package",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "default": "ed836368-92b1-4654-ae7c-e2a847d156e7"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePackageSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/subscriptions": {
+      "get": {
+        "tags": [
+          "Package Subscription"
+        ],
+        "summary": "Get Subscriptions",
+        "parameters": [
+          {
+            "name": "recurrence",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxTotalPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "minTotalPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "governorateId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "neighborhoodId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ByMe",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/subscriptions/{id}/change-status": {
+      "patch": {
+        "tags": [
+          "Package Subscription"
+        ],
+        "summary": "Change Status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeStatusPackageSubscriptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/occurrences": {
+      "get": {
+        "tags": [
+          "Package Subscription"
+        ],
+        "summary": "Get Occurrences",
+        "parameters": [
+          {
+            "name": "maxTotalPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "minTotalPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "governorateId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "neighborhoodId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ByMe",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/occurrences/{id}/completed": {
+      "post": {
+        "tags": [
+          "Package Subscription"
+        ],
+        "summary": "Complete Appointment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteOccurrencesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/product-brand": {
+      "get": {
+        "tags": [
+          "Product Brands Of Marketplace"
+        ],
+        "summary": "Get Product Brands",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Product Brands Of Marketplace"
+        ],
+        "summary": "Create Product Brand",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMarketplaceProductBrandRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/product-categories": {
+      "get": {
+        "tags": [
+          "Product Categories Of Marketplace"
+        ],
+        "summary": "Get Product Categories",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Product Categories Of Marketplace"
+        ],
+        "summary": "Create Product Category",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMarketplaceProductCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/product-materials": {
+      "get": {
+        "tags": [
+          "Product Materials Of Marketplace"
+        ],
+        "summary": "Get Product Materials",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Product Materials Of Marketplace"
+        ],
+        "summary": "Create Product Material",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMarketplaceProductMaterialRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/product-sub-categories": {
+      "get": {
+        "tags": [
+          "Product Sub Categories Of Marketplace"
+        ],
+        "summary": "Get Product Sub Categories",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Product Sub Categories Of Marketplace"
+        ],
+        "summary": "Create Product Sub Category",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMarketplaceProductSubCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/furniture": {
+      "post": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Add furniture",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFurnitureToMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFurnitureToMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/furnitures/{id}": {
+      "put": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Update furniture",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFurnitureMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFurnitureMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/appliances": {
+      "post": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Add appliance",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AddApplianceToMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AddApplianceToMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/appliances/{id}": {
+      "put": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Update appliance",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateApplianceMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateApplianceMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/electronics": {
+      "post": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Add electronic",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AddElectronicToMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AddElectronicToMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/electronics/{id}": {
+      "put": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Update electronic",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateElectronicMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateElectronicMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/pets-tools": {
+      "post": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Add pets tool",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPetsToolToMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPetsToolToMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/pets-tools/{id}": {
+      "put": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Update pet tools",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePetToolMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePetToolMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/pets": {
+      "post": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Add pets",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPetToMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AddPetToMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/pets/{id}": {
+      "put": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Update pets",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePetMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePetMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/clothes": {
+      "post": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Add clothes",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AddClothesToMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AddClothesToMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/clothes/{id}": {
+      "put": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Update clothes",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClothesMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClothesMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/cars": {
+      "post": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Add Cars",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCarToMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCarToMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/cars/{id}": {
+      "put": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Update cars",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCarMarketplaceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCarMarketplaceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products": {
+      "get": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Get Marketplace Products",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sellerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sellerRole",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "condition",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "minPriceWithDiscount",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "maxPriceWithDiscount",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "hasDicount",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "isAvailableDelivery",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "neighborhoodId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "governorateId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "furnitureMaterialId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "furnitureUsage",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "appliancePowerType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applianceBrandId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "applianceCountryOfOrigin",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "electronicBrandId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "petGender",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clothesBrandId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clothesSubCategoryId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "carBrandId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "carTransmission",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "carFuelType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/{productType}/{id}": {
+      "get": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Get Marketplace Product Details",
+        "parameters": [
+          {
+            "name": "productType",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/marketplace/products/{id}": {
+      "delete": {
+        "tags": [
+          "Products Of Marketplace"
+        ],
+        "summary": "Delete Product From Marketplace",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/services": {
+      "post": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Add New Service",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateServiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Get Services",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "minPrice",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "governorateId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "neighborhoodId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isMine",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/services/{id}": {
+      "put": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Update Service",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServiceRequest"
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateServiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Get Details",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Service"
+        ],
+        "summary": "Delete Service",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/service-names": {
+      "post": {
+        "tags": [
+          "Service Name"
+        ],
+        "summary": "Add new name",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddServiceNameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/service-names": {
+      "get": {
+        "tags": [
+          "Service Name"
+        ],
+        "summary": "Get All",
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: ar or en",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddApplianceToMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "971b77a2-2d51-419f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "Used",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "powerTpe": {
+            "type": "string",
+            "default": "Electric",
+            "nullable": true
+          },
+          "voltage": {
+            "type": "integer",
+            "description": "From 100 to 240",
+            "format": "int32",
+            "default": "100"
+          },
+          "energyEfficiencyRating": {
+            "type": "string",
+            "default": "A",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "description": "greater than 0 - less than or equel 100000",
+            "format": "double",
+            "default": "1000"
+          },
+          "capacityUnit": {
+            "type": "string",
+            "default": "kilogram",
+            "nullable": true
+          },
+          "warrantyInMonths": {
+            "type": "integer",
+            "description": "0-120",
+            "format": "int32"
+          },
+          "accessories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "countryOfOrigin": {
+            "type": "string",
+            "default": "China",
+            "nullable": true
+          },
+          "brandId": {
+            "type": "string",
+            "default": "971b77a2-2d51-419f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean"
+          },
+          "isAvailableDelivery": {
+            "type": "boolean"
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddCarToMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": "Toyota Corolla 2022",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "White",
+              "Black"
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "default": "Toyota Corolla 2022 in excellent condition with regular maintenance.",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "b1f3c5e2-3d51-4a9f-b308-8fb324765d05",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1
+          },
+          "brandId": {
+            "type": "string",
+            "default": "c8f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "trim": {
+            "type": "string",
+            "default": "Highline",
+            "nullable": true
+          },
+          "transmission": {
+            "type": "string",
+            "default": "Automatic",
+            "nullable": true
+          },
+          "fuelType": {
+            "type": "string",
+            "default": "Gasoline",
+            "nullable": true
+          },
+          "mileage": {
+            "type": "integer",
+            "format": "int32",
+            "default": 65000
+          },
+          "engineCapacity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1600
+          },
+          "numberOfDoors": {
+            "type": "integer",
+            "format": "int32",
+            "default": 4
+          },
+          "anyMaintenanceRequired": {
+            "type": "boolean",
+            "default": false
+          },
+          "featuresKeywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Rear Camera",
+              "Parking Sensors",
+              "Air Conditioning",
+              "Bluetooth",
+              "Touchscreen"
+            ],
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 850000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean",
+            "default": true
+          },
+          "isAvailableDelivery": {
+            "type": "boolean",
+            "default": true
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double",
+            "default": 0
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double",
+            "default": 0
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "default": "123 Tahrir Square, Downtown Cairo",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.2357,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 30.0444,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddClothesToMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": "Classic Cotton T-Shirt",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "White",
+              "Black"
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "default": "Premium cotton t-shirt suitable for daily wear.",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "f5f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "New",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 10
+          },
+          "brandId": {
+            "type": "string",
+            "default": "f5f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "shortDescription": {
+            "type": "string",
+            "default": "Soft breathable cotton tee with a relaxed fit.",
+            "nullable": true
+          },
+          "featuresKeywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Cotton",
+              "Breathable",
+              "Casual"
+            ],
+            "nullable": true
+          },
+          "subCategoryId": {
+            "type": "string",
+            "default": "s5f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "default": "Medium",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "default": "Male",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 350
+          },
+          "isNegotiablePrice": {
+            "type": "boolean",
+            "default": true
+          },
+          "isAvailableDelivery": {
+            "type": "boolean",
+            "default": true
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double",
+            "default": 0
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "default": "123 Tahrir Square, Downtown Cairo",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddElectronicToMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": "iPhone 15 Pro",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Black",
+              "Silver"
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "default": "iPhone 15 Pro in excellent condition with its original box.",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "g6f3c5e2-3d51-4a9f-b308-8fb324765d02",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "Used",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "warrantyInMonths": {
+            "type": "integer",
+            "format": "int32",
+            "default": 12
+          },
+          "accessories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Charger",
+              "Original Box"
+            ],
+            "nullable": true
+          },
+          "brandId": {
+            "type": "string",
+            "default": "g6f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "processor": {
+            "type": "string",
+            "default": "Apple A17 Pro",
+            "nullable": true
+          },
+          "ramInGb": {
+            "type": "integer",
+            "format": "int32",
+            "default": 8,
+            "nullable": true
+          },
+          "storageInGb": {
+            "type": "integer",
+            "format": "int32",
+            "default": 256,
+            "nullable": true
+          },
+          "batteryCapacityInMah": {
+            "type": "integer",
+            "format": "int32",
+            "default": 3274,
+            "nullable": true
+          },
+          "batteryHealthPercentage": {
+            "type": "integer",
+            "format": "int32",
+            "default": 95,
+            "nullable": true
+          },
+          "screenSize": {
+            "type": "number",
+            "format": "double",
+            "default": 6.1,
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean",
+            "default": true
+          },
+          "isAvailableDelivery": {
+            "type": "boolean",
+            "default": true
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "default": "123 Tahrir Square, Downtown Cairo",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddFurnitureToMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "furnitureUsage": {
+            "type": "string",
+            "default": "Home",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "widthInMeter": {
+            "type": "number",
+            "format": "double"
+          },
+          "heightInMeter": {
+            "type": "number",
+            "format": "double"
+          },
+          "depthInMeter": {
+            "type": "number",
+            "format": "double"
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "c2f3c5e2-3d51-4a9f-b308-8fb324765d03",
+            "nullable": true
+          },
+          "materialId": {
+            "type": "string",
+            "default": "abc",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "Used",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean"
+          },
+          "isAvailableDelivery": {
+            "type": "boolean"
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddPetToMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Black",
+              "White"
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "d3f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "animalBreed": {
+            "type": "string",
+            "default": "Golden Retriever",
+            "nullable": true
+          },
+          "ageInMonths": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "healthCondition": {
+            "type": "string",
+            "nullable": true
+          },
+          "vaccinated": {
+            "type": "boolean"
+          },
+          "healthIssues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 250
+          },
+          "isNegotiablePrice": {
+            "type": "boolean",
+            "default": true
+          },
+          "isAvailableDelivery": {
+            "type": "boolean",
+            "default": true
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double",
+            "default": 0
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "default": "123 Tahrir Square, Downtown Cairo",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddPetsToolToMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": "Premium Dog Leash",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Black",
+              "Brown"
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "default": "Durable nylon leash suitable for medium-sized dogs.",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "h6f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "Used",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "animalBreed": {
+            "type": "string",
+            "default": "Golden Retriever",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "default": "Medium",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 250
+          },
+          "isNegotiablePrice": {
+            "type": "boolean",
+            "default": true
+          },
+          "isAvailableDelivery": {
+            "type": "boolean",
+            "default": true
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double",
+            "default": 0
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "default": "123 Tahrir Square, Downtown Cairo",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AddServiceNameRequest": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "properties": {
+          "oldPassword": {
+            "type": "string",
+            "description": "Must be a valid password, not empty, between 8 and 50 characters, contain at least one uppercase letter, one lowercase letter, one digit, one special character (@$!%*?&+), and must not contain whitespace.",
+            "nullable": true
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "Must be a valid password, not empty, between 8 and 50 characters, contain at least one uppercase letter, one lowercase letter, one digit, one special character (@$!%*?&+), and must not contain whitespace.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangeRoleRequest": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ChangeStatusPackageSubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "packageSubscriptionConcurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CompleteAppointmentRequest": {
+        "type": "object",
+        "properties": {
+          "star": {
+            "type": "integer",
+            "format": "int32",
+            "default": 3
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          },
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "feedback": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CompleteOccurrencesRequest": {
+        "type": "object",
+        "properties": {
+          "star": {
+            "type": "integer",
+            "format": "int32",
+            "default": 3
+          },
+          "details": {
+            "type": "string",
+            "nullable": true
+          },
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "feedback": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConflictFailure": {
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateAppointmentRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "from": {
+            "type": "string",
+            "format": "time",
+            "default": "15:53:3"
+          },
+          "to": {
+            "type": "string",
+            "format": "time",
+            "default": "15:53:3"
+          },
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eaccde4",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateMarketplaceProductBrandRequest": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "default": "Samsung",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "default": "سامسونج",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "default": "Appliances",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateMarketplaceProductCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "default": "Refrigerators",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "default": "ثلاجات",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "default": "Appliances",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateMarketplaceProductMaterialRequest": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "default": "Solid Wood",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "default": "خشب طبيعي",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "default": "Furniture",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateMarketplaceProductSubCategoryRequest": {
+        "type": "object",
+        "properties": {
+          "nameEn": {
+            "type": "string",
+            "default": "T-Shirts",
+            "nullable": true
+          },
+          "nameAr": {
+            "type": "string",
+            "default": "تيشيرتات",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "f5f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePackageRequest": {
+        "type": "object",
+        "properties": {
+          "serviceNameId": {
+            "type": "string",
+            "default": "05e1361b-d0e4-4a46-b7d9-e0ff188cbdea",
+            "nullable": true
+          },
+          "recurrence": {
+            "type": "string",
+            "description": "Daily, Weekly, Monthly",
+            "default": "Monthly",
+            "nullable": true
+          },
+          "totalOccurrences": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "serviceDurationInMin": {
+            "type": "number",
+            "format": "float"
+          },
+          "servicePrice": {
+            "type": "number",
+            "format": "double",
+            "default": 100,
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "categoryName": {
+            "type": "string",
+            "default": "Home_Care",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "governorateId": {
+            "type": "string",
+            "default": "676ed79d469499c28eaccd99",
+            "nullable": true
+          },
+          "itemsJson": {
+            "type": "string",
+            "default": "[{\r\n  \"Name\": \"stringa\",\r\n  \"Price\": 30,\r\n  \"Description\": \"string\"\r\n},{\r\n  \"Name\": \"stringb\",\r\n  \"Price\": 20,\r\n  \"Description\": \"string\"\r\n},{\r\n  \"Name\": \"stringc\",\r\n  \"Price\": 10,\r\n  \"Description\": \"string\"\r\n}]",
+            "nullable": true
+          },
+          "neighborhoodIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": "[\"676ee7cc469499c28eaccdeb\",\"676ee7cc469499c28eaccdee\",\"676ee7cc469499c28eaccdef\"]",
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreatePackageSubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "packageConcurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "default": "2024-06-01"
+          },
+          "from": {
+            "type": "string",
+            "format": "time",
+            "default": "08:00"
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eaccdee",
+            "nullable": true
+          },
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": "[\"02fb3781-6447-451c-b7e3-4610958d9951\",\"b9d17a1b-3432-4a6c-8ee5-499fd6110baf\",\"cadd23f4-6d22-459b-81bf-ba32c08f5bca\"]",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateServiceRequest": {
+        "type": "object",
+        "properties": {
+          "serviceNameId": {
+            "type": "string",
+            "default": "05e1361b-d0e4-4a46-b7d9-e0ff188cbdea",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 1000
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "categoryName": {
+            "type": "string",
+            "default": "Home_Care",
+            "nullable": true
+          },
+          "timeslotDurationInMin": {
+            "type": "number",
+            "format": "float",
+            "default": "50"
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "subDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "itemsJson": {
+            "type": "string",
+            "default": "[{\r\n  \"Name\": \"stringa\",\r\n  \"Price\": 30,\r\n  \"Description\": \"string\"\r\n},{\r\n  \"Name\": \"stringb\",\r\n  \"Price\": 20,\r\n  \"Description\": \"string\"\r\n},{\r\n  \"Name\": \"stringc\",\r\n  \"Price\": 10,\r\n  \"Description\": \"string\"\r\n}]",
+            "nullable": true
+          },
+          "agendasJson": {
+            "type": "string",
+            "default": "[{\r\n  \"Day\": \"Friday\",\r\n  \"From\": \"11:37\",\r\n  \"To\": \"14:37\"\r\n},{\r\n  \"Day\": \"Monday\",\r\n  \"From\": \"1:37\",\r\n  \"To\": \"3:37\"\r\n},{\r\n  \"Day\": \"Sunday\",\r\n  \"From\": \"8:37\",\r\n  \"To\": \"11:37\"\r\n}]",
+            "nullable": true
+          },
+          "neighborhoodIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": "[\"676ee7cc469499c28eaccdeb\",\"676ee7cc469499c28eaccdee\",\"676ee7cc469499c28eaccdef\"]",
+            "nullable": true
+          },
+          "governorateId": {
+            "type": "string",
+            "default": "676ed79d469499c28eaccd99",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "DuplicatedFailue": {
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ForgetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Must be a valid email address, not empty, and up to 200 characters.",
+            "default": "user@alaaeldin.com",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GovernorateResponseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "GovernorateResponseDtoListSuccess": {
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GovernorateResponseDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LoginByEmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Must be a valid email address, not empty, and up to 200 characters.",
+            "default": "user@alaaeldin.com",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "description": "Must be a valid password, not empty, between 8 and 50 characters, contain at least one uppercase letter, one lowercase letter, one digit, one special character (@$!%*?&+), and must not contain whitespace.",
+            "default": "Ae1234++",
+            "nullable": true
+          },
+          "remeberMe": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NeighborhoodResponseDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "NeighborhoodResponseDtoListSuccess": {
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NeighborhoodResponseDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegisterAsCompanyRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "default": "Company Name",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "Must be a valid email address, not empty, and up to 200 characters.",
+            "default": "user@alaaEldin.com",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "description": "Must be a valid password, not empty, between 8 and 50 characters, contain at least one uppercase letter, one lowercase letter, one digit, one special character (@$!%*?&+), and must not contain whitespace.",
+            "default": "Ae1234++",
+            "nullable": true
+          },
+          "signatoryFirstName": {
+            "type": "string",
+            "description": "Must be a valid name, not empty, between 3 and 50 characters, and contain only letters and spaces.",
+            "default": "first name",
+            "nullable": true
+          },
+          "signatoryLastName": {
+            "type": "string",
+            "description": "Must be a valid name, not empty, between 3 and 50 characters, and contain only letters and spaces.",
+            "default": "last name",
+            "nullable": true
+          },
+          "signatoryNationalId": {
+            "type": "string",
+            "description": "Must be a valid Egyptian national ID, not empty, exactly 14 digits, start with 2 or 3, and contain a valid birth date.",
+            "default": "30105230101234",
+            "nullable": true
+          },
+          "imageSignatoryNationalId": {
+            "type": "string",
+            "description": "Not Empty.",
+            "format": "binary",
+            "nullable": true
+          },
+          "phoneNumber": {
+            "type": "string",
+            "description": "Must be a valid Egyptian phone number and not empty.",
+            "default": "01234567890",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "description": "Must be a valid language value (en or ar).",
+            "default": "en",
+            "nullable": true
+          },
+          "taxCardImages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "ownersNationalIdImages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "commercialRegisterImages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "logo": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "street": {
+            "type": "string",
+            "description": "Must be a valid street name, not empty, between 3 and 200 characters.",
+            "default": "Street name",
+            "nullable": true
+          },
+          "apartment": {
+            "type": "string",
+            "description": "Must be a valid apartment number or identifier, not empty, and up to 20 characters.",
+            "default": "Apt 1",
+            "nullable": true
+          },
+          "floor": {
+            "type": "string",
+            "description": "Must be a valid floor value, not empty, and up to 10 characters.",
+            "default": "3",
+            "nullable": true
+          },
+          "building": {
+            "type": "string",
+            "description": "Must be a valid building name or number, not empty, and up to 50 characters.",
+            "default": "Building A",
+            "nullable": true
+          },
+          "details": {
+            "type": "string",
+            "description": "Optional field for additional details, up to 400 characters.",
+            "default": "Optional details",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "description": "Not Empty.",
+            "default": "676ee7cc469499c28eaccdf8",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Must be a valid email address, not empty, and up to 200 characters.",
+            "default": "user@alaaEldin.com",
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "description": "Must be a valid password, not empty, between 8 and 50 characters, contain at least one uppercase letter, one lowercase letter, one digit, one special character (@$!%*?&+), and must not contain whitespace.",
+            "default": "Ae1234++",
+            "nullable": true
+          },
+          "firstName": {
+            "type": "string",
+            "description": "Must be a valid name, not empty, between 3 and 50 characters, and contain only letters and spaces.",
+            "default": "first name",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Must be a valid name, not empty, between 3 and 50 characters, and contain only letters and spaces.",
+            "default": "last name",
+            "nullable": true
+          },
+          "nationalId": {
+            "type": "string",
+            "description": "Must be a valid Egyptian national ID, not empty, exactly 14 digits, start with 2 or 3, and contain a valid birth date.",
+            "default": "30105230101234",
+            "nullable": true
+          },
+          "phoneNumber": {
+            "type": "string",
+            "description": "Must be a valid Egyptian phone number and not empty.",
+            "default": "01234567890",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "description": "Must be a valid language value (en or ar).",
+            "default": "en",
+            "nullable": true
+          },
+          "frontImageNationalId": {
+            "type": "string",
+            "description": "Not Empty.",
+            "format": "binary",
+            "nullable": true
+          },
+          "backImageNationalId": {
+            "type": "string",
+            "description": "Not Empty.",
+            "format": "binary",
+            "nullable": true
+          },
+          "selfieImageNationalId": {
+            "type": "string",
+            "description": "Not Empty.",
+            "format": "binary",
+            "nullable": true
+          },
+          "profileImage": {
+            "type": "string",
+            "description": "Optional.",
+            "format": "binary",
+            "nullable": true
+          },
+          "street": {
+            "type": "string",
+            "description": "Must be a valid street name, not empty, between 3 and 200 characters.",
+            "default": "Street name",
+            "nullable": true
+          },
+          "apartment": {
+            "type": "string",
+            "description": "Must be a valid apartment number or identifier, not empty, and up to 20 characters.",
+            "default": "Apt 1",
+            "nullable": true
+          },
+          "floor": {
+            "type": "string",
+            "description": "Must be a valid floor value, not empty, and up to 10 characters.",
+            "default": "3",
+            "nullable": true
+          },
+          "building": {
+            "type": "string",
+            "description": "Must be a valid building name or number, not empty, and up to 50 characters.",
+            "default": "Building A",
+            "nullable": true
+          },
+          "details": {
+            "type": "string",
+            "description": "Optional field for additional details, up to 400 characters.",
+            "default": "Optional details",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "description": "Not Empty.",
+            "default": "676ee7cc469499c28eaccdf8",
+            "nullable": true
+          },
+          "governorateId": {
+            "type": "string",
+            "description": "Not Empty.",
+            "default": "676ed79d469499c28eaccd99",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RescheduleAppointmentRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "from": {
+            "type": "string",
+            "format": "time",
+            "default": "15:53:3"
+          },
+          "to": {
+            "type": "string",
+            "format": "time",
+            "default": "15:53:3"
+          },
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResendEmailVerificationRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Must be a valid email address, not empty, and up to 200 characters.",
+            "default": "user@alaaeldin.com",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "newPassword": {
+            "type": "string",
+            "description": "Must be a valid password, not empty, between 8 and 50 characters, contain at least one uppercase letter, one lowercase letter, one digit, one special character (@$!%*?&+), and must not contain whitespace.",
+            "default": "Ae1234++",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "Must be a valid email address, not empty, and up to 200 characters.",
+            "default": "user@alaaeldin.com",
+            "nullable": true
+          },
+          "token": {
+            "type": "string",
+            "description": "Must be a valid OTP code, not empty, and exactly 4 characters.",
+            "default": "1234",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "StringSuccess": {
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SuccessWithMessage": {
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UnautherizedFailure": {
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateApplianceMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "971b77a2-2d51-419f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "Used",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "powerTpe": {
+            "type": "string",
+            "default": "Electric",
+            "nullable": true
+          },
+          "voltage": {
+            "type": "integer",
+            "description": "From 100 to 240",
+            "format": "int32",
+            "default": "100"
+          },
+          "energyEfficiencyRating": {
+            "type": "string",
+            "default": "A",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "number",
+            "description": "greater than 0 - less than or equel 100000",
+            "format": "double",
+            "default": "1000"
+          },
+          "capacityUnit": {
+            "type": "string",
+            "default": "kilogram",
+            "nullable": true
+          },
+          "warrantyInMonths": {
+            "type": "integer",
+            "description": "0-120",
+            "format": "int32"
+          },
+          "accessories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "countryOfOrigin": {
+            "type": "string",
+            "default": "China",
+            "nullable": true
+          },
+          "brandId": {
+            "type": "string",
+            "default": "971b77a2-2d51-419f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean"
+          },
+          "isAvailableDelivery": {
+            "type": "boolean"
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateCarMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "default": "Toyota Corolla 2022",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "White",
+              "Black"
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "default": "Toyota Corolla 2022 in excellent condition with regular maintenance.",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "b1f3c5e2-3d51-4a9f-b308-8fb324765d05",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1
+          },
+          "brandId": {
+            "type": "string",
+            "default": "c8f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "trim": {
+            "type": "string",
+            "default": "Highline",
+            "nullable": true
+          },
+          "transmission": {
+            "type": "string",
+            "default": "Automatic",
+            "nullable": true
+          },
+          "fuelType": {
+            "type": "string",
+            "default": "Gasoline",
+            "nullable": true
+          },
+          "mileage": {
+            "type": "integer",
+            "format": "int32",
+            "default": 65000
+          },
+          "engineCapacity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 1600
+          },
+          "numberOfDoors": {
+            "type": "integer",
+            "format": "int32",
+            "default": 4
+          },
+          "anyMaintenanceRequired": {
+            "type": "boolean",
+            "default": false
+          },
+          "featuresKeywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Rear Camera",
+              "Parking Sensors",
+              "Air Conditioning",
+              "Bluetooth",
+              "Touchscreen"
+            ],
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean"
+          },
+          "isAvailableDelivery": {
+            "type": "boolean"
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateClothesMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "default": "Classic Cotton T-Shirt",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "White",
+              "Black"
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "default": "Premium cotton t-shirt suitable for daily wear.",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "f5f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "New",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 10
+          },
+          "brandId": {
+            "type": "string",
+            "default": "f5f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "shortDescription": {
+            "type": "string",
+            "default": "Soft breathable cotton tee with a relaxed fit.",
+            "nullable": true
+          },
+          "featuresKeywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Cotton",
+              "Breathable",
+              "Casual"
+            ],
+            "nullable": true
+          },
+          "subCategoryId": {
+            "type": "string",
+            "default": "s5f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "default": "Medium",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "default": "Male",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean"
+          },
+          "isAvailableDelivery": {
+            "type": "boolean"
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateElectronicMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "default": "iPhone 15 Pro",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Black",
+              "Silver"
+            ],
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "default": "iPhone 15 Pro in excellent condition with its original box.",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "g6f3c5e2-3d51-4a9f-b308-8fb324765d02",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "Used",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "warrantyInMonths": {
+            "type": "integer",
+            "format": "int32",
+            "default": 12
+          },
+          "accessories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Charger",
+              "Original Box"
+            ],
+            "nullable": true
+          },
+          "brandId": {
+            "type": "string",
+            "default": "g6f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "processor": {
+            "type": "string",
+            "default": "Apple A17 Pro",
+            "nullable": true
+          },
+          "ramInGb": {
+            "type": "integer",
+            "format": "int32",
+            "default": 8,
+            "nullable": true
+          },
+          "storageInGb": {
+            "type": "integer",
+            "format": "int32",
+            "default": 256,
+            "nullable": true
+          },
+          "batteryCapacityInMah": {
+            "type": "integer",
+            "format": "int32",
+            "default": 3274,
+            "nullable": true
+          },
+          "batteryHealthPercentage": {
+            "type": "integer",
+            "format": "int32",
+            "default": 95,
+            "nullable": true
+          },
+          "screenSize": {
+            "type": "number",
+            "format": "double",
+            "default": 6.1,
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean",
+            "default": true
+          },
+          "isAvailableDelivery": {
+            "type": "boolean",
+            "default": true
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double",
+            "default": 5
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "default": "123 Tahrir Square, Downtown Cairo",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateFurnitureMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "furnitureUsage": {
+            "type": "string",
+            "default": "Home",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "widthInMeter": {
+            "type": "number",
+            "format": "double"
+          },
+          "heightInMeter": {
+            "type": "number",
+            "format": "double"
+          },
+          "depthInMeter": {
+            "type": "number",
+            "format": "double"
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "c2f3c5e2-3d51-4a9f-b308-8fb324765d03",
+            "nullable": true
+          },
+          "materialId": {
+            "type": "string",
+            "default": "abc",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "Used",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean"
+          },
+          "isAvailableDelivery": {
+            "type": "boolean"
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePackageRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceNameId": {
+            "type": "string",
+            "default": "6f7g8h9i-0j1k-2l3m-4n5o-6p7q8r9s0t1u",
+            "nullable": true
+          },
+          "recurrence": {
+            "type": "string",
+            "description": "Daily, Weekly, Monthly",
+            "default": "Monthly",
+            "nullable": true
+          },
+          "totalOccurrences": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "serviceDurationInMin": {
+            "type": "number",
+            "format": "float"
+          },
+          "servicePrice": {
+            "type": "number",
+            "format": "double",
+            "default": 100,
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "categoryName": {
+            "type": "string",
+            "default": "Home_Care",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "governorateId": {
+            "type": "string",
+            "default": "676ed79d469499c28eaccd99",
+            "nullable": true
+          },
+          "itemsJson": {
+            "type": "string",
+            "default": "[{\r\n  \"Name\": \"stringa\",\r\n  \"Price\": 30,\r\n  \"Description\": \"string\"\r\n},{\r\n  \"Name\": \"stringb\",\r\n  \"Price\": 20,\r\n  \"Description\": \"string\"\r\n},{\r\n  \"Name\": \"stringc\",\r\n  \"Price\": 10,\r\n  \"Description\": \"string\"\r\n}]",
+            "nullable": true
+          },
+          "neighborhoodIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": "[\"676ee7cc469499c28eaccdeb\",\"676ee7cc469499c28eaccdee\",\"676ee7cc469499c28eaccdef\"]",
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePetMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "d3f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32",
+            "default": 5
+          },
+          "animalBreed": {
+            "type": "string",
+            "nullable": true
+          },
+          "ageInMonths": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "healthCondition": {
+            "type": "string",
+            "nullable": true
+          },
+          "vaccinated": {
+            "type": "boolean"
+          },
+          "healthIssues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 250
+          },
+          "isNegotiablePrice": {
+            "type": "boolean"
+          },
+          "isAvailableDelivery": {
+            "type": "boolean"
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdatePetToolMarketplaceRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "default": "abc",
+            "nullable": true
+          },
+          "colors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [
+              "Black",
+              "Brown"
+            ],
+            "nullable": true
+          },
+          "animalBreed": {
+            "type": "string",
+            "default": "Golden Retriever",
+            "nullable": true
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "size": {
+            "type": "string",
+            "default": "Medium",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "categoryId": {
+            "type": "string",
+            "default": "h6f3c5e2-3d51-4a9f-b308-8fb324765d01",
+            "nullable": true
+          },
+          "condition": {
+            "type": "string",
+            "default": "Used",
+            "nullable": true
+          },
+          "totalQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 100000
+          },
+          "isNegotiablePrice": {
+            "type": "boolean"
+          },
+          "isAvailableDelivery": {
+            "type": "boolean"
+          },
+          "deliveryPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "discountPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "mainImageFile": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "neighborhoodId": {
+            "type": "string",
+            "default": "676ee7cc469499c28eacce82",
+            "nullable": true
+          },
+          "fullAddress": {
+            "type": "string",
+            "nullable": true
+          },
+          "longitude": {
+            "type": "number",
+            "format": "double",
+            "default": 31.27113252559222,
+            "nullable": true
+          },
+          "latitude": {
+            "type": "number",
+            "format": "double",
+            "default": 32.299864315554274,
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImageUrls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateServiceRequest": {
+        "type": "object",
+        "properties": {
+          "concurrencyStamp": {
+            "type": "string",
+            "nullable": true
+          },
+          "serviceNameId": {
+            "type": "string",
+            "default": "3c4d5e6f-7g8h-9i0j-1k2l-m3n4o5p6q7r8",
+            "nullable": true
+          },
+          "price": {
+            "type": "number",
+            "format": "double",
+            "default": 1000
+          },
+          "currency": {
+            "type": "string",
+            "default": "EGY",
+            "nullable": true
+          },
+          "categoryName": {
+            "type": "string",
+            "default": "Home_Care",
+            "nullable": true
+          },
+          "timeslotDurationInMin": {
+            "type": "number",
+            "format": "float",
+            "default": "60"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "subDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "imageFiles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "nullable": true
+          },
+          "deletedImages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "itemsJson": {
+            "type": "string",
+            "default": "[      {\r\n \"Id\": \"1d389d12-d801-4d60-ab5b-b0f14df9f322\",\r\n \"Name\": \"stringb\",\r\n \"Price\": 20,\r\n \"Description\": \"string\"},{\r\n \"Id\": \"2b9c7645-7d62-4101-a4a6-4bcb4436345f\",\r\n \"Name\": \"stringa\",\r\n \"Price\": 30,\r\n \"Description\": \"string\"},{\r\n \"Id\": \"459036d8-5951-46ef-86b8-e404902b65e0\",\r\n \"Name\": \"stringc\",\r\n \"Price\": 10,\r\n \"Description\": \"string\"}]",
+            "nullable": true
+          },
+          "agendasJson": {
+            "type": "string",
+            "default": "[{\r\n  \"Day\": \"Friday\",\r\n  \"From\": \"11:37\",\r\n  \"To\": \"14:37\"\r\n},{\r\n  \"Day\": \"Monday\",\r\n  \"From\": \"1:37\",\r\n  \"To\": \"3:37\"\r\n},{\r\n  \"Day\": \"sunday\",\r\n  \"From\": \"8:37\",\r\n  \"To\": \"14:37\"\r\n}]",
+            "nullable": true
+          },
+          "neighborhoodIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": "[\"676ee7cc469499c28eaccdeb\",\"676ee7cc469499c28eaccdee\",\"676ee7cc469499c28eaccdef\"]",
+            "nullable": true
+          },
+          "governorateId": {
+            "type": "string",
+            "default": "676ed79d469499c28eaccd99",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ValidationFailure": {
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "additionalProperties": false
+      },
+      "VerifyCompanyEmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Must be a valid email address, not empty, and up to 200 characters.",
+            "default": "user@alaaEldin.com",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Must be a valid OTP code, not empty, and exactly 4 characters.",
+            "default": "1234",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "VerifyEmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Must be a valid email address, not empty, and up to 200 characters.",
+            "default": "user@alaaEldin.com",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Must be a valid OTP code, not empty, and exactly 4 characters.",
+            "default": "1234",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "VerifyForgetPasswordOTPRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "default": "user@alaaeldin.com",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Must be a valid OTP code, not empty, and exactly 4 characters.",
+            "default": "1234",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "description": "JWT Authorization header using the Bearer scheme.",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearer": [ ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Appointment"
+    },
+    {
+      "name": "Authentication"
+    },
+    {
+      "name": "Developer"
+    },
+    {
+      "name": "Governorate"
+    },
+    {
+      "name": "Neighborhood"
+    },
+    {
+      "name": "Package"
+    },
+    {
+      "name": "Package Subscription"
+    },
+    {
+      "name": "Product Brands Of Marketplace"
+    },
+    {
+      "name": "Product Categories Of Marketplace"
+    },
+    {
+      "name": "Product Materials Of Marketplace"
+    },
+    {
+      "name": "Product Sub Categories Of Marketplace"
+    },
+    {
+      "name": "Products Of Marketplace"
+    },
+    {
+      "name": "Service"
+    },
+    {
+      "name": "Service Name"
+    }
+  ]
+}
