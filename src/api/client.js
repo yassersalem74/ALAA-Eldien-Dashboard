@@ -7,7 +7,7 @@ export class ApiError extends Error {
   }
 }
 
-export function createApiClient({ baseUrl, getToken = () => '', credentials = 'same-origin', language = 'en', fetchImpl = globalThis.fetch }) {
+export function createApiClient({ baseUrl, getToken = () => '', credentials = 'same-origin', language = 'en', onUnauthorized, fetchImpl = globalThis.fetch }) {
   const base = baseUrl?.trim().replace(/\/+$/, '')
   return async function request(path, { method = 'GET', body, signal, language: requestLanguage = language } = {}) {
     if (!base) throw new ApiError('The backend URL has not been configured.')
@@ -25,6 +25,7 @@ export function createApiClient({ baseUrl, getToken = () => '', credentials = 's
       if (error.name === 'AbortError') throw error
       throw new ApiError('Unable to reach the backend. Check the connection and backend CORS settings.')
     }
+    if (response.status === 401 && token) onUnauthorized?.(token)
     const text = await response.text()
     let payload = null
     if (text) {

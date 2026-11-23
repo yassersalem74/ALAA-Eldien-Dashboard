@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { signInAdmin } from './api/adminSession'
+import AdminLogin from './pages/AdminLogin'
 import Icon from './components/Icon'
 import EmptyPage from './pages/EmptyPage'
 import MarketplaceCategories from './pages/MarketplaceCategories'
@@ -57,9 +59,8 @@ function NavigationItem({ item, path, expanded, onToggle }) {
   </div>
 }
 
-export default function App() {
+function Dashboard({ session, onSignOut }) {
   const [path, setPath] = useState(currentPath)
-  const [marketplaceToken, setMarketplaceToken] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [expanded, setExpanded] = useState({})
   useEffect(() => { const navigate = () => { setPath(currentPath()); setMobileOpen(false) }; window.addEventListener('hashchange', navigate); return () => window.removeEventListener('hashchange', navigate) }, [])
@@ -82,11 +83,18 @@ export default function App() {
     <div className="lg:pl-[260px]">
       <header className="flex min-h-[78px] items-center justify-between gap-4 border-b border-slate-200/80 bg-white px-5 sm:px-8 xl:px-10">
         <div className="flex items-center gap-3"><button className="icon-button lg:hidden" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Icon name="menu" /></button><span className="hidden text-xs text-slate-400 sm:inline">Workspace</span><Icon name="chevronRight" size={13} className="hidden text-slate-300 sm:block" /><span className="text-xs font-semibold text-slate-700">{page?.label || 'Page not found'}</span></div>
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f1e9db] text-[10px] font-bold text-[#7e6746]">AE</span>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="hidden max-w-48 truncate text-xs font-medium text-slate-600 sm:block" title={session.account.email || session.account.name}>
+            {session.account.name}
+          </span>
+          <button className="btn-secondary shrink-0" type="button" onClick={onSignOut}>
+            <Icon name="logout" size={15} /> Sign out
+          </button>
+        </div>
       </header>
       <main className="mx-auto max-w-[1600px] px-5 py-7 sm:px-8 sm:py-8 xl:px-10">
         {taxonomyRoute ? (
-          <MarketplaceCategories key={path} token={marketplaceToken} onConnect={setMarketplaceToken}
+          <MarketplaceCategories key={path} request={session.request}
             view={taxonomyRoute[1] === 'sub-categories' ? 'subcategories' : 'categories'}
             categoryId={decodePathId(taxonomyRoute[2])} subcategoryId={decodePathId(taxonomyRoute[3])} />
         ) : page ? <EmptyPage key={path} title={page.label} section={section} /> : <div className="panel p-12 text-center"><h1 className="text-xl font-semibold">Page not found</h1><a href="#/home" className="btn-primary mt-5 inline-flex">Go to Home</a></div>}
@@ -94,4 +102,33 @@ export default function App() {
       </main>
     </div>
   </div>
+}
+
+export default function App() {
+  const [{ session, notice }, setAccess] = useState({ session: null, notice: '' })
+  const expireSession = useCallback(token => {
+    setAccess(current => current.session?.token === token
+      ? { session: null, notice: 'Your session expired. Please sign in again.' }
+      : current)
+  }, [])
+
+  useEffect(() => {
+    if (session?.expiresAt == null) return
+    let timer
+    function scheduleExpiry() {
+      const remaining = session.expiresAt - Date.now()
+      if (remaining <= 0) expireSession(session.token)
+      else timer = window.setTimeout(scheduleExpiry, Math.min(remaining, 2147483647))
+    }
+    timer = window.setTimeout(scheduleExpiry, Math.min(Math.max(session.expiresAt - Date.now(), 0), 2147483647))
+    return () => window.clearTimeout(timer)
+  }, [session, expireSession])
+
+  async function handleSignIn(email, password) {
+    const signedIn = await signInAdmin(email, password, expireSession)
+    setAccess({ session: signedIn, notice: '' })
+  }
+
+  if (!session) return <AdminLogin notice={notice} onSignIn={handleSignIn} />
+  return <Dashboard session={session} onSignOut={() => setAccess({ session: null, notice: '' })} />
 }

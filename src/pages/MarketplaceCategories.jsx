@@ -1,32 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
-import { apiConfig } from '../api/config'
-import { createApiClient } from '../api/client'
-import { createAuthenticationApi } from '../api/authentication'
 import { categoryRows, createMarketplaceApi } from '../api/marketplace'
 import useMarketplaceData from '../hooks/useMarketplaceData'
 import Icon from '../components/Icon'
-import { ApiAccessDialog } from '../components/UserDialogs'
 import { PageHeading } from '../components/UI'
 import MarketplaceCategoryDialog from '../components/MarketplaceCategoryDialog'
 import MarketplaceFormEditor from '../components/MarketplaceFormEditor'
 
 const categoriesPath = '#/marketplace/categories'
 const subcategoriesPath = '#/marketplace/sub-categories'
-const adminRoles = ['superadmin', 'admin', 'alaaeldin']
-
-function canManageMarketplace(token) {
-  if (!token) return apiConfig.credentials === 'include'
-  try {
-    const encoded = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
-    const claims = JSON.parse(atob(encoded))
-    const roles = [claims.role, claims.roles, claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']]
-      .flat().filter(role => typeof role === 'string')
-    return !roles.length || roles.some(role => adminRoles.includes(role.toLowerCase()))
-  } catch {
-    return false
-  }
-}
-
 function StatusPanel({ resource, empty, children }) {
   if (resource.loading) return <p role="status" className="panel p-6 text-sm text-slate-600">Loading...</p>
   if (resource.error) return (
@@ -41,7 +22,7 @@ function StatusPanel({ resource, empty, children }) {
   return children
 }
 
-function CatalogRows({ api, resource, categoryId, onAccess }) {
+function CatalogRows({ api, resource, categoryId }) {
   const [dialog, setDialog] = useState(null)
   const [opening, setOpening] = useState(false)
   const [message, setMessage] = useState('')
@@ -90,9 +71,6 @@ function CatalogRows({ api, resource, categoryId, onAccess }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs font-medium text-slate-600">{resource.data ? `${resource.data.length} ${categoryId ? 'subcategories' : 'categories'}` : ''}</p>
         <div className="flex flex-wrap gap-2">
-          <button className="btn-secondary" type="button" onClick={onAccess}>
-            <Icon name="shield" size={15} /> Switch account
-          </button>
           <button className="btn-primary" type="button" disabled={opening} onClick={() => openDialog('new')}>
             <Icon name="plus" size={16} /> Add {kind}
           </button>
@@ -134,27 +112,17 @@ function CatalogRows({ api, resource, categoryId, onAccess }) {
   )
 }
 
-export default function MarketplaceCategories({ view = 'categories', categoryId, subcategoryId, token, onConnect }) {
-  const [showAccess, setShowAccess] = useState(false)
-  const api = useMemo(() => createMarketplaceApi(createApiClient({ ...apiConfig, getToken: () => token })), [token])
-  const allowed = canManageMarketplace(token)
+export default function MarketplaceCategories({ view = 'categories', categoryId, subcategoryId, request }) {
+  const api = useMemo(() => createMarketplaceApi(request), [request])
   const loadCategories = useCallback(async signal => categoryRows(await api.getCategories({ signal })), [api])
   const loadSubcategories = useCallback(async signal => categoryRows(await api.getSubcategories(categoryId, { signal }), true), [api, categoryId])
-  const categories = useMarketplaceData(loadCategories, allowed)
-  const subcategories = useMarketplaceData(loadSubcategories, allowed && Boolean(categoryId))
+  const categories = useMarketplaceData(loadCategories)
+  const subcategories = useMarketplaceData(loadSubcategories, Boolean(categoryId))
   const category = categories.data?.find(row => row.id === categoryId)
   const subcategory = subcategories.data?.find(row => row.id === subcategoryId)
   const selectSubcategories = view === 'subcategories' && !subcategoryId
   const pageTitle = subcategoryId ? 'Product form' : categoryId || selectSubcategories ? 'Subcategories' : 'Categories'
   const heading = subcategory ? `${subcategory.name} product form` : category && !subcategoryId ? `${category.name} subcategories` : pageTitle
-  const openAccess = () => setShowAccess(true)
-  const authFailed = categories.error?.status === 401 || subcategories.error?.status === 401
-
-  async function login(email, password) {
-    const auth = createAuthenticationApi(createApiClient(apiConfig))
-    onConnect(await auth.login(email, password))
-  }
-
   return (
     <>
       <PageHeading eyebrow="MARKETPLACE" title={heading}>
@@ -162,16 +130,8 @@ export default function MarketplaceCategories({ view = 'categories', categoryId,
           {subcategoryId ? 'Back to subcategories' : 'Back to categories'}
         </a>}
       </PageHeading>
-      {(!allowed || authFailed) ? (
-        <div className="panel space-y-3 p-6">
-          <p className="text-sm text-slate-600">{token && !allowed ? 'This account does not have marketplace admin access.' : 'Sign in with an admin account to manage marketplace categories and product forms.'}</p>
-          <button type="button" className="btn-secondary" onClick={openAccess}><Icon name="shield" size={15} /> Sign in to backend</button>
-          {pageTitle !== 'Product form' && <button type="button" className="btn-primary ml-2" onClick={openAccess}>
-            <Icon name="plus" size={16} /> Add {pageTitle === 'Categories' ? 'category' : 'subcategory'}
-          </button>}
-        </div>
-      ) : !categoryId && !selectSubcategories ? (
-        <CatalogRows api={api} resource={categories} onAccess={openAccess} />
+      {!categoryId && !selectSubcategories ? (
+        <CatalogRows api={api} resource={categories} />
       ) : (
         <StatusPanel resource={categories} empty={categories.data?.length === 0 && 'Add a marketplace category before creating subcategories.'}>
           {selectSubcategories && (
@@ -185,7 +145,7 @@ export default function MarketplaceCategories({ view = 'categories', categoryId,
             </label>
           )}
           {categoryId && !category && <p className="panel p-6 text-sm">Marketplace category not found.</p>}
-          {category && !subcategoryId && <CatalogRows api={api} resource={subcategories} categoryId={categoryId} onAccess={openAccess} />}
+          {category && !subcategoryId && <CatalogRows api={api} resource={subcategories} categoryId={categoryId} />}
           {category && subcategoryId && (
             <StatusPanel resource={subcategories} empty={!subcategories.loading && !subcategory && 'Subcategory not found for this category.'}>
               {subcategory && <MarketplaceFormEditor api={api} subcategoryId={subcategoryId} />}
@@ -193,13 +153,6 @@ export default function MarketplaceCategories({ view = 'categories', categoryId,
           )}
         </StatusPanel>
       )}
-      {showAccess && <ApiAccessDialog onClose={() => setShowAccess(false)} onLogin={login}
-        onConnect={nextToken => {
-          if (!canManageMarketplace(nextToken)) throw new Error('Enter a valid marketplace admin access token.')
-          onConnect(nextToken)
-          categories.reload()
-          subcategories.reload()
-        }} />}
     </>
   )
 }
