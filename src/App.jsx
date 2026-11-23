@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Icon from './components/Icon'
 import EmptyPage from './pages/EmptyPage'
+import MarketplaceCategories from './pages/MarketplaceCategories'
 
 const navigation = [
   { section: 'Overview', items: [{ path: 'home', label: 'Home', icon: 'home' }] },
@@ -29,6 +30,11 @@ const navigation = [
 
 const pages = navigation.flatMap(group => group.items.flatMap(item => item.children || [item]))
 const currentPath = () => window.location.hash.slice(2) || 'home'
+const isActivePath = (path, target) => path === target || path.startsWith(`${target}/`)
+
+function decodePathId(id) {
+  try { return id ? decodeURIComponent(id) : undefined } catch { return id }
+}
 
 function NavigationItem({ item, path, expanded, onToggle }) {
   if (!item.children) {
@@ -38,7 +44,7 @@ function NavigationItem({ item, path, expanded, onToggle }) {
       {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efc567]" />}
     </a>
   }
-  const childActive = item.children.some(child => child.path === path)
+  const childActive = item.children.some(child => isActivePath(path, child.path))
   const open = expanded[item.key] || childActive
   return <div className="mb-1">
     <button type="button" onClick={() => onToggle(item.key, open)} aria-expanded={open} className={`group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-[12px] font-medium transition-colors ${childActive ? 'text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
@@ -46,17 +52,19 @@ function NavigationItem({ item, path, expanded, onToggle }) {
       <Icon name="chevronDown" size={14} className={`ml-auto transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
     {open && <div className="ml-[21px] border-l border-white/10 pb-1 pl-4">
-      {item.children.map(child => { const active = path === child.path; return <a key={child.path} href={`#/${child.path}`} aria-current={active ? 'page' : undefined} className={`mb-0.5 flex items-center rounded-md px-3 py-2.5 text-[11px] transition-colors ${active ? 'bg-white/[0.08] font-medium text-white' : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'}`}>{child.label}{active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efc567]" />}</a> })}
+      {item.children.map(child => { const active = isActivePath(path, child.path); return <a key={child.path} href={`#/${child.path}`} aria-current={active ? 'page' : undefined} className={`mb-0.5 flex items-center rounded-md px-3 py-2.5 text-[11px] transition-colors ${active ? 'bg-white/[0.08] font-medium text-white' : 'text-slate-500 hover:bg-white/5 hover:text-slate-300'}`}>{child.label}{active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#efc567]" />}</a> })}
     </div>}
   </div>
 }
 
 export default function App() {
   const [path, setPath] = useState(currentPath)
+  const [marketplaceToken, setMarketplaceToken] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [expanded, setExpanded] = useState({})
   useEffect(() => { const navigate = () => { setPath(currentPath()); setMobileOpen(false) }; window.addEventListener('hashchange', navigate); return () => window.removeEventListener('hashchange', navigate) }, [])
-  const page = pages.find(item => item.path === path)
+  const taxonomyRoute = /^marketplace\/(categories|sub-categories)(?:\/([^/]+))?(?:\/([^/]+)\/form)?$/.exec(path)
+  const page = pages.find(item => item.path === (taxonomyRoute ? `marketplace/${taxonomyRoute[1]}` : path))
   const section = path === 'home' ? 'Overview' : ['users', 'services', 'appointments'].includes(path) ? 'Management' : 'Commerce'
 
   return <div className="min-h-screen bg-[#f6f7f9] text-slate-800">
@@ -77,7 +85,11 @@ export default function App() {
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f1e9db] text-[10px] font-bold text-[#7e6746]">AE</span>
       </header>
       <main className="mx-auto max-w-[1600px] px-5 py-7 sm:px-8 sm:py-8 xl:px-10">
-        {page ? <EmptyPage key={path} title={page.label} section={section} /> : <div className="panel p-12 text-center"><h1 className="text-xl font-semibold">Page not found</h1><a href="#/home" className="btn-primary mt-5 inline-flex">Go to Home</a></div>}
+        {taxonomyRoute ? (
+          <MarketplaceCategories key={path} token={marketplaceToken} onConnect={setMarketplaceToken}
+            view={taxonomyRoute[1] === 'sub-categories' ? 'subcategories' : 'categories'}
+            categoryId={decodePathId(taxonomyRoute[2])} subcategoryId={decodePathId(taxonomyRoute[3])} />
+        ) : page ? <EmptyPage key={path} title={page.label} section={section} /> : <div className="panel p-12 text-center"><h1 className="text-xl font-semibold">Page not found</h1><a href="#/home" className="btn-primary mt-5 inline-flex">Go to Home</a></div>}
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-5 text-[10px] text-slate-400"><p>© 2026 Alaa Eldien. All rights reserved.</p><p>Admin dashboard</p></footer>
       </main>
     </div>

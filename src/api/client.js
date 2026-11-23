@@ -9,16 +9,17 @@ export class ApiError extends Error {
 
 export function createApiClient({ baseUrl, getToken = () => '', credentials = 'same-origin', language = 'en', fetchImpl = globalThis.fetch }) {
   const base = baseUrl?.trim().replace(/\/+$/, '')
-  return async function request(path, { method = 'GET', body, signal } = {}) {
+  return async function request(path, { method = 'GET', body, signal, language: requestLanguage = language } = {}) {
     if (!base) throw new ApiError('The backend URL has not been configured.')
     if (!path?.startsWith('/') || path.startsWith('//')) throw new ApiError('API endpoints must be relative paths beginning with /.')
     const token = getToken()?.trim()
+    const multipart = body instanceof FormData
     let response
     try {
       response = await fetchImpl(`${base}${path}`, {
         method, signal, credentials,
-        headers: { Accept: 'application/json', 'Accept-Language': language, ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
-        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        headers: { Accept: 'application/json', 'Accept-Language': requestLanguage, ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body !== undefined && !multipart ? { 'Content-Type': 'application/json' } : {}) },
+        ...(body !== undefined ? { body: multipart ? body : JSON.stringify(body) } : {}),
       })
     } catch (error) {
       if (error.name === 'AbortError') throw error
