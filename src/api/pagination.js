@@ -11,7 +11,7 @@ export function queryPath(path, values) {
 }
 
 export function readPage(data, entity, page, pageSize) {
-  const rows = [data, ...['items', entity, 'results', 'data'].map(key => field(data, key))].find(Array.isArray)
+  const rows = [data, ...['items', entity, 'results', 'result', 'records', 'data'].map(key => field(data, key))].find(Array.isArray)
   if (!rows) throw new ApiError(`The API did not return a list of ${entity}.`)
 
   const pagination = field(data, 'pagination') ?? data

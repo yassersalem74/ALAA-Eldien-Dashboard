@@ -7,6 +7,14 @@ import CommerceCategories from './pages/CommerceCategories'
 import CommerceOrders from './pages/CommerceOrders'
 import CommerceProducts from './pages/CommerceProducts'
 import Users from './pages/Users'
+import Services from './pages/Services'
+import ServiceNames from './pages/ServiceNames'
+import ServiceAppointments from './pages/ServiceAppointments'
+
+const serviceRoutes = {
+  services: Services, 'service-names': ServiceNames, packages: Services,
+  appointments: ServiceAppointments, subscriptions: ServiceAppointments, occurrences: ServiceAppointments,
+}
 
 const navigation = [
   { section: 'Overview', items: [{ path: 'home', label: 'Home', icon: 'home' }] },
@@ -14,7 +22,11 @@ const navigation = [
     { path: 'users', label: 'Users', icon: 'users' },
     { key: 'service', label: 'Service', icon: 'services', children: [
       { path: 'services', label: 'Services' },
+      { path: 'service-names', label: 'Service names' },
+      { path: 'packages', label: 'Packages' },
       { path: 'appointments', label: 'Appointments' },
+      { path: 'subscriptions', label: 'Subscriptions' },
+      { path: 'occurrences', label: 'Occurrences' },
     ] },
   ] },
   { section: 'Commerce', items: [
@@ -72,7 +84,8 @@ function Dashboard({ session, onSignOut }) {
   const salesChannel = channelPath === 'store' ? 'Store' : 'Marketplace'
   const page = pages.find(item => item.path === (taxonomy ? `${channelPath}/${taxonomy}` : path))
   const CommerceListing = listing === 'products' ? CommerceProducts : CommerceOrders
-  const section = path === 'home' ? 'Overview' : ['users', 'services', 'appointments'].includes(path) ? 'Management' : 'Commerce'
+  const ServicePage = Object.hasOwn(serviceRoutes, path) ? serviceRoutes[path] : null
+  const section = path === 'home' ? 'Overview' : path === 'users' || ServicePage ? 'Management' : 'Commerce'
 
   return <div className="min-h-screen bg-[#f6f7f9] text-slate-800">
     {mobileOpen && <button className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />}
@@ -104,6 +117,7 @@ function Dashboard({ session, onSignOut }) {
             view={taxonomy} categoryId={decodePathId(categoryId)} subcategoryId={decodePathId(subcategoryId)} />
         ) : listing ? <CommerceListing key={path} request={session.request} salesChannel={salesChannel} />
           : path === 'users' ? <Users session={session} />
+          : ServicePage ? <ServicePage key={path} kind={path} request={session.request} />
           : page ? <EmptyPage key={path} title={page.label} section={section} /> : <div className="panel p-12 text-center"><h1 className="text-xl font-semibold">Page not found</h1><a href="#/home" className="btn-primary mt-5 inline-flex">Go to Home</a></div>}
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-5 text-[10px] text-slate-400"><p>© 2026 Alaa Eldien. All rights reserved.</p><p>Admin dashboard</p></footer>
       </main>

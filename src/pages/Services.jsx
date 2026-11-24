@@ -1,12 +1,119 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { createServicesApi, recurrences, serviceCategories, serviceRoles } from '../api/services'
+import DataTable from '../components/DataTable'
+import formatAmount from '../components/formatAmount'
 import Icon from '../components/Icon'
-import { DetailDialog, ExportButton, MetricCard, PageHeading, StatusBadge } from '../components/UI'
-import { money, services } from '../data/demo'
+import ServiceBookingEditor from '../components/ServiceBookingEditor'
+import { ServiceDialog, ServiceField, ServiceFilters, ServiceMutation, ServiceResourceError } from '../components/ServiceControls'
+import ServiceListingEditor from '../components/ServiceListingEditor'
+import { PageHeading, TableThumbnail } from '../components/UI'
+import useApiData from '../hooks/useApiData'
 
-export default function Services({ search = '' }) {
-  const [category, setCategory] = useState('All services')
-  const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState(null)
-  const filtered = services.filter(item => (category === 'All services' || item.category === category) && [query, search].every(term => `${item.name} ${item.category}`.toLowerCase().includes(term.toLowerCase())))
-  return <><PageHeading eyebrow="MANAGEMENT" title="Services" description="Manage the services that make everyday life a little easier."><ExportButton rows={services} filename="services" /></PageHeading><div className="mb-6 grid gap-4 sm:grid-cols-3"><MetricCard label="Available services" value={services.length} icon="services" detail="Across 3 service categories" /><MetricCard label="Active services" value={services.filter(item => item.status === 'Active').length} icon="check" index={2} detail="Available for new bookings" /><MetricCard label="Total bookings" value={services.reduce((sum, item) => sum + item.bookings, 0)} icon="calendar" index={1} detail="Across the demo catalog" /></div><div className="mb-5 flex flex-wrap items-center justify-between gap-4"><div className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-white p-1">{['All services', 'Home care', 'Maintenance', 'Renovation'].map(item => <button key={item} onClick={() => setCategory(item)} className={`rounded-md px-3 py-2 text-[11px] font-medium transition-colors ${category === item ? 'bg-[#172b46] text-white' : 'text-slate-500 hover:bg-slate-50'}`}>{item}</button>)}</div><input className="field w-52" placeholder="Search services..." aria-label="Search services" value={query} onChange={event => setQuery(event.target.value)} /></div><div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">{filtered.map((service, index) => <article key={service.id} className="panel p-6"><div className="flex items-start justify-between"><div className={`flex h-12 w-12 items-center justify-center rounded-xl ${index % 2 ? 'bg-[#f4eee2] text-[#ae8b45]' : 'bg-[#edf2f9] text-[#53719e]'}`}><Icon name={service.icon} size={24} /></div><StatusBadge status={service.status} /></div><p className="mt-5 text-[9px] font-medium uppercase tracking-[0.12em] text-slate-400">{service.category}</p><h2 className="mt-1.5 text-base font-semibold text-[#172b46]">{service.name}</h2><p className="mt-2 min-h-9 text-xs leading-5 text-slate-500">{service.description}</p><div className="mt-4 flex gap-5 text-[10px] text-slate-400"><span className="flex items-center gap-1.5"><Icon name="clock" size={13} />{service.duration}</span><span>{service.bookings} bookings</span></div><div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4"><p className="text-sm font-semibold text-[#172b46]">{money(service.price)}<span className="ml-1 text-[9px] font-normal text-slate-400">/ service</span></p><button className="flex items-center gap-1.5 text-[10px] font-medium text-[#526d91] hover:underline" onClick={() => setSelected(service)}>View details <Icon name="arrowRight" size={13} /></button></div></article>)}</div>{!filtered.length && <div className="panel p-14 text-center text-sm text-slate-500">No services match your search.</div>}{selected && <DetailDialog item={selected} title={selected.name} onClose={() => setSelected(null)} />}</>
+const pageSize = 10
+
+function ListingDialog({ api, current, kind, language, onClose, onSaved }) {
+  const [mode, setMode] = useState(current.mode)
+  const item = current.row
+  const isPackage = kind === 'packages'
+  const entity = isPackage ? 'package' : 'service'
+  const load = useCallback(signal => api.getService(item.id, language, { signal, language }), [api, item, language])
+  const needsDetails = item?.id != null && !isPackage && current.mode !== 'delete'
+  const detail = useApiData(load, needsDetails)
+  if (detail.loading || detail.error) {
+    return <ServiceDialog title={`View ${entity}`} onClose={onClose}><ServiceResourceError resource={detail} /></ServiceDialog>
+  }
+  const listing = detail.data ? { ...detail.data, id: detail.data.id ?? item.id } : item
+  const name = listing?.name || item?.name || entity
+  if (mode === 'edit') return <ServiceListingEditor api={api} kind={kind} listing={listing} onClose={onClose} onSaved={onSaved} />
+  if (mode === 'book') return <ServiceBookingEditor api={api} kind={kind} listing={listing} onClose={onClose} onSaved={onSaved} />
+  if (mode === 'delete') {
+    return <ServiceMutation title={`Delete ${entity}?`} action="Delete" danger onClose={onClose} onSubmit={async () => {
+      await api.deleteListing(kind, listing.id)
+      onSaved(`The ${entity} was deleted.`)
+    }}>
+      <p className="text-sm">Delete <strong>{name}</strong>?</p>
+    </ServiceMutation>
+  }
+  const info = [
+    ['Category', serviceCategories[listing.category] ?? listing.category], ['Provider', listing.provider],
+    ['Price', formatAmount(listing.price, listing.currency === 'EGY' ? 'EGP' : listing.currency)],
+    ['Duration', listing.duration != null && `${listing.duration} minutes`],
+    ['Governorate', listing.governorate], ['Recurrence', listing.recurrence], ['Occurrences', listing.totalOccurrences],
+    ['Description', listing.description], ['Additional description', listing.subDescription],
+  ]
+  return (
+    <ServiceDialog title={name} onClose={onClose}>
+      <dl className="divide-y divide-slate-100">
+        {info.filter(([, value]) => value != null && value !== false && value !== '').map(([label, value]) =>
+          <div key={label} className="grid grid-cols-[120px_minmax(0,1fr)] gap-4 py-2 text-sm">
+            <dt className="text-slate-500">{label}</dt><dd className="break-words">{value}</dd>
+          </div>
+        )}
+      </dl>
+      {listing.items?.length > 0 && <ul aria-label="Service items" className="my-4 grid gap-2 text-sm text-slate-700">
+        {listing.items.map((entry, index) => <li key={entry.id ?? index}>{entry.name} · {formatAmount(entry.price, listing.currency === 'EGY' ? 'EGP' : listing.currency)}</li>)}
+      </ul>}
+      {listing.images?.length > 0 && <div className="my-4 flex flex-wrap gap-2">
+        {listing.images.map((url, index) => <img src={url} alt="" key={`${url}-${index}`} className="size-20 rounded-lg object-cover" />)}
+      </div>}
+      {listing.id != null && <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" className="btn-primary" onClick={() => setMode('book')}>{isPackage ? 'Subscribe' : 'Check availability and book'}</button>
+        <button type="button" className="btn-secondary" onClick={() => setMode('edit')}>Edit</button>
+        <button type="button" className="btn-secondary !text-red-700" onClick={() => setMode('delete')}>Delete</button>
+      </div>}
+    </ServiceDialog>
+  )
+}
+
+export default function Services({ request, kind = 'services' }) {
+  const api = useMemo(() => createServicesApi(request), [request])
+  const [page, setPage] = useState(1)
+  const [filters, setFilters] = useState({ language: 'en' })
+  const [dialog, setDialog] = useState(null)
+  const [notice, setNotice] = useState('')
+  const load = useCallback(signal => api.listListings(kind, { page, pageSize, ...filters }, { signal, language: filters.language }), [api, kind, page, filters])
+  const listings = useApiData(load)
+  const isPackage = kind === 'packages'
+  const entity = isPackage ? 'package' : 'service'
+  const columns = [
+    {
+      key: 'name', label: isPackage ? 'Package' : 'Service',
+      render: row => <div className="flex items-center gap-3"><TableThumbnail image={row.images[0]} /><span className="font-semibold text-[#172b46]">{row.name || `Unnamed ${entity}`}</span></div>,
+    },
+    { key: 'category', label: 'Category', render: row => serviceCategories[row.category] ?? row.category ?? '—' },
+    { key: 'provider', label: 'Provider' },
+    { key: 'price', label: 'Price', render: row => formatAmount(row.price, row.currency === 'EGY' ? 'EGP' : row.currency) },
+    { key: 'duration', label: 'Duration', render: row => row.duration == null ? '—' : `${row.duration} min` },
+    ...(isPackage ? [{ key: 'recurrence', label: 'Recurrence' }, { key: 'totalOccurrences', label: 'Occurrences' }] : []),
+    { key: 'actions', label: 'Actions', render: row => <button type="button" className="btn-secondary" onClick={() => setDialog({ mode: 'view', row })}>View details</button> },
+  ]
+  return (
+    <>
+      <PageHeading eyebrow="SERVICES" title={isPackage ? 'Packages' : 'Services'}>
+        <button type="button" className="btn-primary" onClick={() => setDialog({ mode: 'edit' })}><Icon name="plus" size={16} /> Add {entity}</button>
+      </PageHeading>
+      <ServiceFilters api={api} onApply={values => { setFilters(values); setPage(1) }}
+        minPrice={isPackage ? 'minServicePrice' : 'minPrice'} maxPrice={isPackage ? 'maxServicePrice' : 'maxPrice'}>
+        {isPackage ? <ServiceField label="Recurrence"><select className="field" name="recurrence">
+          <option value="">All recurrences</option>{recurrences.map(item => <option key={item}>{item}</option>)}
+        </select></ServiceField> : <>
+          <ServiceField label="Category"><select className="field" name="category">
+            <option value="">All categories</option>{Object.entries(serviceCategories).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select></ServiceField>
+          <ServiceField label="Provider role"><select className="field" name="role">
+            <option value="">All roles</option>{serviceRoles.map(item => <option key={item}>{item}</option>)}
+          </select></ServiceField>
+        </>}
+        <ServiceField label="Listings"><select className="field" name="isMine"><option value="">All listings</option><option value="true">My listings</option></select></ServiceField>
+        <ServiceField label="Language"><select className="field" name="language"><option value="en">English</option><option value="ar">Arabic</option></select></ServiceField>
+      </ServiceFilters>
+      {notice && <p role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800">{notice}</p>}
+      <DataTable title={isPackage ? 'Package list' : 'Service list'} rows={listings.data?.rows} columns={columns} controls={false} showDetails={false}
+        loading={listings.loading} error={listings.error?.message} onRetry={listings.reload}
+        pageSize={listings.data?.pageSize ?? pageSize} pagination={{ page, total: listings.data?.total, hasNext: listings.data?.hasNext, onChange: setPage }}
+        emptyMessage={isPackage ? 'No packages found.' : 'No services found.'} />
+      {dialog && <ListingDialog current={dialog} api={api} language={filters.language} kind={kind} onClose={() => setDialog(null)}
+        onSaved={message => { setNotice(message); listings.reload() }} />}
+    </>
+  )
 }
