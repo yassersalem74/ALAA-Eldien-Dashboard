@@ -77,10 +77,10 @@ function BookingDetails({ row, actions, onAction, onClose }) {
   )
 }
 
-export default function ServiceAppointments({ request, kind = 'appointments' }) {
+export default function ServiceAppointments({ request, kind = 'appointments', partner = false }) {
   const api = useMemo(() => createServicesApi(request), [request])
   const [page, setPage] = useState(1)
-  const [filters, setFilters] = useState({ ByMe: 'true' })
+  const [filters, setFilters] = useState({ ByMe: String(!partner) })
   const [dialog, setDialog] = useState(null)
   const [notice, setNotice] = useState('')
   const load = useCallback(signal => api.listBookings(kind, { page, pageSize, ...filters }, { signal, language: filters.language }), [api, kind, page, filters])
@@ -101,7 +101,7 @@ export default function ServiceAppointments({ request, kind = 'appointments' }) 
     <>
       <PageHeading eyebrow="SERVICES" title={titles[kind]} description="Bookings associated with your signed-in account." />
       <ServiceFilters api={api} minPrice="minTotalPrice" maxPrice="maxTotalPrice" onApply={values => { setFilters(values); setPage(1) }}>
-        <ServiceField label="Booking scope"><select className="field" name="ByMe"><option value="true">Booked by me</option><option value="false">Booked with me</option></select></ServiceField>
+        <ServiceField label="Booking scope"><select className="field" name="ByMe" defaultValue={String(!partner)}><option value="true">Booked by me</option><option value="false">Booked with me</option></select></ServiceField>
         {kind === 'subscriptions' && <ServiceField label="Recurrence"><select className="field" name="recurrence"><option value="">All recurrences</option>{recurrences.map(item => <option key={item}>{item}</option>)}</select></ServiceField>}
         {kind === 'appointments' && <ServiceField label="Language"><select className="field" name="language"><option value="en">English</option><option value="ar">Arabic</option></select></ServiceField>}
       </ServiceFilters>

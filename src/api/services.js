@@ -125,6 +125,11 @@ export function createServicesApi(request) {
     async getNeighborhoods(governorateId, language, options) {
       return collection(await request(queryPath(`${base}/neighborhoods`, { governorateId, language }), options), 'neighborhoods').map(namedRow)
     },
+    saveLocation(kind, id, body) {
+      const path = `${base}/admin/${kind}`
+      return json(id == null ? path : idPath(path, id), id == null ? 'POST' : 'PUT', body)
+    },
+    deleteLocation: (kind, id) => json(idPath(`${base}/admin/${kind}`, id), 'DELETE'),
     listBookings: (kind, filters, options) => page(kind, filters, bookingRow, options),
     async getAvailability(id, date, options) {
       const data = await request(queryPath(idPath(`${base}/appointments/availabilities/service`, id), { date }), options)

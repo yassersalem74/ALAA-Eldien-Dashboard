@@ -105,3 +105,55 @@ test('Store products request the Store channel and order rows stay on their resp
   assert.equal(storeOrders.hasNext, true)
   assert.equal(storeOrders.hasUnclassifiedOrders, true)
 })
+
+test('product details preserve form values, and product and rating writes use the documented paths', async () => {
+  const calls = []
+  const api = createCommerceApi(async (path, options) => {
+    calls.push({ path, ...options })
+    if (path === '/api/v1/product/p%2F1') return { product: {
+      id: 'p/1', productFormId: 'form/1', concurrencyStamp: 'product-rev',
+      keyValuePairsJson: JSON.stringify([{ Key: 'productName', Value: 'Bag' }, { Key: 'extras', Value: '["blue"]' }]),
+    } }
+    if (path.endsWith('/ratings')) return [{ userId: 'u1', rating: 4, concurrencyStamp: 'rating-rev' }]
+    return null
+  }, 'Store')
+  const product = await api.getProduct('p/1')
+  assert.equal(product.formId, 'form/1')
+  assert.equal(product.values.extras, '["blue"]')
+  assert.equal(product.name, 'Bag')
+  const multipart = new FormData()
+  multipart.set('price', '0')
+  await api.saveProduct(product.formId, null, multipart)
+  await api.saveProduct(product.formId, product.id, multipart)
+  const [rating] = await api.getRatings(product.id)
+  await api.saveRating(product.id, { rating: 5, concurrencyStamp: rating.concurrencyStamp }, true)
+  await api.deleteProduct(product.id)
+  assert.deepEqual(calls.map(({ path, method }) => [method ?? 'GET', path]), [
+    ['GET', '/api/v1/product/p%2F1'],
+    ['POST', '/api/v1/product/product-form/form%2F1'],
+    ['PUT', '/api/v1/product/product-form/form%2F1/p%2F1'],
+    ['GET', '/api/v1/product/p%2F1/ratings'],
+    ['PUT', '/api/v1/product/p%2F1/ratings'],
+    ['DELETE', '/api/v1/product/p%2F1'],
+  ])
+})
+
+test('store directory and all-orders endpoints preserve account scope and concurrency values', async () => {
+  const calls = []
+  const api = createCommerceApi(async (path, options) => {
+    calls.push({ path, ...options })
+    if (path === '/api/v1/stores/me') return { id: 's1', categories: [{ id: 'c1', name: 'Home' }] }
+    if (path === '/api/v1/stores' && !options?.body) return { stores: [{ id: 's1', name: 'Home goods' }] }
+    if (path.startsWith('/api/v1/orders/customer?')) return { orders: [{ id: 'o1', concurrencyStamp: 'order-rev' }], totalCount: 1 }
+    return null
+  }, '')
+  assert.equal((await api.getStores())[0].name, 'Home goods')
+  assert.deepEqual((await api.getStore('me')).categoryIds, ['c1'])
+  const orders = await api.getOrders({ scope: 'customer', page: 2, pageSize: 5, status: 'Pending' })
+  assert.equal(orders.rows[0].salesChannel, '')
+  await api.changeOrderStatus('o1', { status: 'CancelledByCustomer', concurrencyStamp: orders.rows[0].concurrencyStamp })
+  await api.createOrder({ items: [{ productId: 'p1', quantity: 2, productConcurrencyStamp: 'product-rev' }] })
+  assert.equal(calls[2].path, '/api/v1/orders/customer?page=2&pageSize=5&status=Pending')
+  assert.deepEqual(calls[3], { path: '/api/v1/orders/o1/status', method: 'PUT', body: { status: 'CancelledByCustomer', concurrencyStamp: 'order-rev' } })
+  assert.equal(calls[4].path, '/api/v1/orders')
+})

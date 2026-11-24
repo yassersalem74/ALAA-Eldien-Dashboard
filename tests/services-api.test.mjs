@@ -56,3 +56,18 @@ test('write endpoints use the documented methods and preserve stamps and multipa
   assert.equal(calls[11].body.packageSubscriptionConcurrencyStamp, 'subscription-rev')
   assert.throws(() => api.changeAppointment('a1', 'Accepted'), /security stamp/)
 })
+
+test('location administration uses the selected governorate and retains update stamps', async () => {
+  const calls = []
+  const api = createServicesApi(async (path, options) => { calls.push({ path, ...options }); return [] })
+  await api.getNeighborhoods('c/1', 'ar')
+  await api.saveLocation('governorates', null, { nameEn: 'Cairo' })
+  await api.saveLocation('neighborhoods', 'n/1', { nameEn: 'Maadi', governorateId: 'c/1', concurrencyStamp: 'rev-1' })
+  await api.deleteLocation('neighborhoods', 'n/1')
+  assert.deepEqual(calls, [
+    { path: '/api/v1/neighborhoods?governorateId=c%2F1&language=ar' },
+    { path: '/api/v1/admin/governorates', method: 'POST', body: { nameEn: 'Cairo' } },
+    { path: '/api/v1/admin/neighborhoods/n%2F1', method: 'PUT', body: { nameEn: 'Maadi', governorateId: 'c/1', concurrencyStamp: 'rev-1' } },
+    { path: '/api/v1/admin/neighborhoods/n%2F1', method: 'DELETE', body: undefined },
+  ])
+})

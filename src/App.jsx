@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { adminTokenKey, clearSavedAdminToken, getSavedAdminToken, saveAdminToken, sessionExpiredMessage, signInAdmin, verifyAdminSession } from './api/adminSession'
+import { adminTokenKey, clearSavedAdminToken, getSavedAdminToken, restoreAdminSession, saveAdminToken, sessionExpiredMessage, signInAdmin } from './api/adminSession'
+import { apiConfig } from './api/config'
 import AdminLogin from './pages/AdminLogin'
 import Icon from './components/Icon'
-import EmptyPage from './pages/EmptyPage'
 import CommerceCategories from './pages/CommerceCategories'
 import CommerceOrders from './pages/CommerceOrders'
 import CommerceProducts from './pages/CommerceProducts'
@@ -10,6 +10,10 @@ import Users from './pages/Users'
 import Services from './pages/Services'
 import ServiceNames from './pages/ServiceNames'
 import ServiceAppointments from './pages/ServiceAppointments'
+import Home from './pages/Home'
+import Locations from './pages/Locations'
+import Stores from './pages/Stores'
+import Account from './pages/Account'
 
 const serviceRoutes = {
   services: Services, 'service-names': ServiceNames, packages: Services,
@@ -20,6 +24,11 @@ const navigation = [
   { section: 'Overview', items: [{ path: 'home', label: 'Home', icon: 'home' }] },
   { section: 'Management', items: [
     { path: 'users', label: 'Users', icon: 'users' },
+    { path: 'account', label: 'My account', icon: 'shield' },
+    { key: 'locations', label: 'Locations', icon: 'location', children: [
+      { path: 'governorates', label: 'Governorates' },
+      { path: 'neighborhoods', label: 'Neighborhoods' },
+    ] },
     { key: 'service', label: 'Service', icon: 'services', children: [
       { path: 'services', label: 'Services' },
       { path: 'service-names', label: 'Service names' },
@@ -30,6 +39,7 @@ const navigation = [
     ] },
   ] },
   { section: 'Commerce', items: [
+    { path: 'orders', label: 'All orders', icon: 'orders' },
     { key: 'marketplace', label: 'Marketplace', icon: 'marketplace', children: [
       { path: 'marketplace/categories', label: 'Categories' },
       { path: 'marketplace/sub-categories', label: 'Sub categories' },
@@ -37,6 +47,7 @@ const navigation = [
       { path: 'marketplace/orders', label: 'Orders' },
     ] },
     { key: 'store', label: 'Store', icon: 'store', children: [
+      { path: 'store/directory', label: 'Stores' },
       { path: 'store/categories', label: 'Categories' },
       { path: 'store/sub-categories', label: 'Sub categories' },
       { path: 'store/products', label: 'Products' },
@@ -75,17 +86,19 @@ function NavigationItem({ item, path, expanded, onToggle }) {
 }
 
 function Dashboard({ session, onSignOut }) {
-  const [path, setPath] = useState(currentPath)
+  const [fragment, setFragment] = useState(currentPath)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [expanded, setExpanded] = useState({})
-  useEffect(() => { const navigate = () => { setPath(currentPath()); setMobileOpen(false) }; window.addEventListener('hashchange', navigate); return () => window.removeEventListener('hashchange', navigate) }, [])
+  useEffect(() => { const navigate = () => { setFragment(currentPath()); setMobileOpen(false) }; window.addEventListener('hashchange', navigate); return () => window.removeEventListener('hashchange', navigate) }, [])
+  const [path, query] = fragment.split('?', 2)
+  const options = new URLSearchParams(query)
+  const initialScope = options.get('scope') === 'customer' ? 'customer' : 'partner'
   const commerceRoute = /^(marketplace|store)\/(?:(categories|sub-categories)(?:\/([^/]+)(?:\/([^/]+)\/form)?)?|(products|orders))$/.exec(path)
   const [, channelPath, taxonomy, categoryId, subcategoryId, listing] = commerceRoute ?? []
   const salesChannel = channelPath === 'store' ? 'Store' : 'Marketplace'
   const page = pages.find(item => item.path === (taxonomy ? `${channelPath}/${taxonomy}` : path))
   const CommerceListing = listing === 'products' ? CommerceProducts : CommerceOrders
   const ServicePage = Object.hasOwn(serviceRoutes, path) ? serviceRoutes[path] : null
-  const section = path === 'home' ? 'Overview' : path === 'users' || ServicePage ? 'Management' : 'Commerce'
 
   return <div className="min-h-screen bg-[#f6f7f9] text-slate-800">
     {mobileOpen && <button className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden" aria-label="Close navigation" onClick={() => setMobileOpen(false)} />}
@@ -115,24 +128,33 @@ function Dashboard({ session, onSignOut }) {
         {taxonomy ? (
           <CommerceCategories key={path} request={session.request} salesChannel={salesChannel}
             view={taxonomy} categoryId={decodePathId(categoryId)} subcategoryId={decodePathId(subcategoryId)} />
-        ) : listing ? <CommerceListing key={path} request={session.request} salesChannel={salesChannel} />
-          : path === 'users' ? <Users session={session} />
-          : ServicePage ? <ServicePage key={path} kind={path} request={session.request} />
-          : page ? <EmptyPage key={path} title={page.label} section={section} /> : <div className="panel p-12 text-center"><h1 className="text-xl font-semibold">Page not found</h1><a href="#/home" className="btn-primary mt-5 inline-flex">Go to Home</a></div>}
+        ) : listing ? <CommerceListing key={fragment} request={session.request} salesChannel={salesChannel} account={session.account} initialScope={initialScope} />
+          : path === 'home' ? <Home session={session} />
+          : path === 'users' ? <Users key={fragment} session={session} companyStatus={options.get('status')} />
+          : path === 'account' ? <Account session={session} />
+          : path === 'orders' ? <CommerceOrders key={fragment} request={session.request} initialScope={initialScope} />
+          : path === 'store/directory' ? <Stores request={session.request} />
+          : path === 'governorates' || path === 'neighborhoods' ? <Locations key={path} kind={path} request={session.request} />
+          : ServicePage ? <ServicePage key={fragment} kind={path} request={session.request} partner={options.get('scope') === 'partner'} />
+          : <div className="panel p-12 text-center"><h1 className="text-xl font-semibold">Page not found</h1><a href="#/home" className="btn-primary mt-5 inline-flex">Go to Home</a></div>}
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-5 text-[10px] text-slate-400"><p>© 2026 Alaa Eldien. All rights reserved.</p><p>Admin dashboard</p></footer>
       </main>
     </div>
   </div>
 }
 
-const signedOut = { session: null, pendingToken: null, notice: '', restoreError: '' }
+const signedOut = { session: null, pendingToken: null, notice: '', restoreError: '', renew: false }
 
 export default function App() {
-  const [{ session, pendingToken, notice, restoreError }, setAccess] = useState(() => ({
+  const [{ session, pendingToken, notice, restoreError, renew }, setAccess] = useState(() => ({
     ...signedOut, pendingToken: getSavedAdminToken(),
   }))
 
   const expireSession = useCallback(token => {
+    if (apiConfig.credentials === 'include' && getSavedAdminToken() === token) {
+      setAccess(current => current.session?.token === token ? { ...signedOut, pendingToken: token, renew: true } : current)
+      return
+    }
     clearSavedAdminToken(token)
     setAccess(current => current.session?.token === token || current.pendingToken === token
       ? { ...signedOut, notice: sessionExpiredMessage }
@@ -142,8 +164,9 @@ export default function App() {
   useEffect(() => {
     if (!pendingToken || restoreError) return
     const controller = new AbortController()
-    verifyAdminSession(pendingToken, expireSession, { signal: controller.signal }).then(restored => {
+    restoreAdminSession(pendingToken, expireSession, { signal: controller.signal, renew }).then(restored => {
       if (controller.signal.aborted) return
+      if (restored.token !== pendingToken && getSavedAdminToken() !== restored.token) return
       setAccess(current => current.pendingToken === pendingToken ? { ...signedOut, session: restored } : current)
     }, error => {
       if (controller.signal.aborted) return
@@ -155,7 +178,7 @@ export default function App() {
       })
     })
     return () => controller.abort()
-  }, [pendingToken, restoreError, expireSession])
+  }, [pendingToken, restoreError, expireSession, renew])
 
   useEffect(() => {
     function syncSession(event) {

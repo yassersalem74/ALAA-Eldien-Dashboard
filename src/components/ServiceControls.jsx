@@ -21,7 +21,7 @@ export function ServiceDialog({ title, onClose, busy = false, children }) {
   )
 }
 
-export function ServiceMutation({ title, onClose, onSubmit, action = 'Save', danger, children }) {
+export function ServiceMutation({ title, onClose, onSubmit, action = 'Save', danger, children, closeOnSuccess = true }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   return (
@@ -34,7 +34,8 @@ export function ServiceMutation({ title, onClose, onSubmit, action = 'Save', dan
         setError('')
         try {
           await onSubmit(data)
-          onClose()
+          if (closeOnSuccess) onClose()
+          else setBusy(false)
         } catch (failure) {
           setError(failure.message)
           setBusy(false)

@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
+import PasswordRecovery from '../components/PasswordRecovery'
 
 export default function AdminLogin({ onSignIn, notice, onRetry }) {
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [recovering, setRecovering] = useState(false)
+  const [passwordReset, setPasswordReset] = useState(false)
 
   async function submit(event) {
     event.preventDefault()
@@ -45,6 +48,7 @@ export default function AdminLogin({ onSignIn, notice, onRetry }) {
             {onRetry && <button className="btn-secondary mt-2" type="button" onClick={onRetry} disabled={busy}>Retry session</button>}
           </div>
         )}
+        {passwordReset && <p className="mb-4 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800" role="status">Password reset. Sign in with your new password.</p>}
         <form className="space-y-4" onSubmit={submit} aria-busy={busy}>
           <div>
             <label className="mb-2 block text-sm font-medium" htmlFor="admin-email">Email</label>
@@ -70,6 +74,8 @@ export default function AdminLogin({ onSignIn, notice, onRetry }) {
             {busy ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
+        <button type="button" className="mt-4 text-xs font-semibold text-[#294565] hover:underline" disabled={busy} onClick={() => setRecovering(true)}>Forgot password?</button>
+        {recovering && <PasswordRecovery onClose={() => setRecovering(false)} onSaved={() => { setPasswordReset(true); setError('') }} />}
       </section>
     </main>
   )

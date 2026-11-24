@@ -69,3 +69,23 @@ export async function verifyAdminSession(token, onUnauthorized, { signal } = {})
   if (expiresAt !== null && expiresAt <= Date.now()) throw new ApiError(sessionExpiredMessage, { status: 401 })
   return { account, expiresAt, token, request }
 }
+
+export async function restoreAdminSession(token, onUnauthorized, { signal, renew = false } = {}) {
+  if (!renew) {
+    try {
+      return await verifyAdminSession(token, onUnauthorized, { signal })
+    } catch (error) {
+      if (error.status !== 401 || apiConfig.credentials !== 'include' || signal?.aborted) throw error
+    }
+  }
+  async function refresh() {
+    const savedToken = getSavedAdminToken()
+    if (savedToken && savedToken !== token) return verifyAdminSession(savedToken, onUnauthorized, { signal })
+    const auth = createAuthenticationApi(createApiClient(apiConfig))
+    const restored = await verifyAdminSession(await auth.refresh({ signal }), onUnauthorized, { signal })
+    if (!signal?.aborted && getSavedAdminToken() === token) saveAdminToken(restored.token)
+    return restored
+  }
+  const locks = globalThis.navigator?.locks
+  return locks ? locks.request(`${adminTokenKey}:refresh`, { signal }, refresh) : refresh()
+}

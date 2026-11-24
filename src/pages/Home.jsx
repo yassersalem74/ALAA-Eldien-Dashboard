@@ -1,30 +1,113 @@
-import { useState } from 'react'
+import { useCallback, useMemo } from 'react'
+import { createCommerceApi } from '../api/commerce'
+import { createServicesApi } from '../api/services'
+import { createUsersApi } from '../api/users'
+import DataTable from '../components/DataTable'
+import formatAmount from '../components/formatAmount'
 import Icon from '../components/Icon'
-import { Avatar, ExportButton, MetricCard, PageHeading, StatusBadge } from '../components/UI'
-import SalesChart from '../components/SalesChart'
-import { appointments, money, orders, sales } from '../data/demo'
+import { PageHeading, StatusBadge } from '../components/UI'
+import useApiData from '../hooks/useApiData'
 
-export default function Home() {
-  const [period, setPeriod] = useState('6')
-  const data = sales.slice(-Number(period))
-  const revenue = data.reduce((total, item) => total + item.marketplace + item.services, 0)
-  return <>
-    <PageHeading eyebrow="OVERVIEW" title="Dashboard overview" description="Welcome back, Yasser. Here’s how Alaa Eldien is doing today.">
-      <span className="btn-secondary !cursor-default"><Icon name="calendar" size={14} />Oct 19, 2026</span><ExportButton rows={data} filename="sales-overview" />
-    </PageHeading>
-    <div className="mb-6 grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 xl:grid-cols-4">
-      <MetricCard label="Total revenue" value="EGP 67,450" change="12.8%" icon="wallet" />
-      <MetricCard label="Total users" value="2,845" change="8.2%" icon="users" index={1} />
-      <MetricCard label="Service appointments" value="486" change="16.4%" icon="calendar" index={2} />
-      <MetricCard label="Marketplace orders" value="1,208" change="10.6%" icon="orders" index={3} />
+const number = new Intl.NumberFormat('en')
+const dateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'Africa/Cairo' })
+const categoryStyle = ['bg-[#eef2f8] text-[#284565]', 'bg-[#f6f0e3] text-[#8d6822]', 'bg-[#e9f4ed] text-[#2b6448]', 'bg-[#f0edf8] text-[#62518c]']
+
+function showDate(value) {
+  return value && Number.isFinite(Date.parse(value)) ? dateFormat.format(new Date(value)) : '—'
+}
+
+function OverviewMetric({ label, icon, path, load, index }) {
+  const resource = useApiData(load)
+  const data = resource.data
+  const count = data?.total ?? (data && !data.hasNext ? data.rows.length : undefined)
+  return (
+    <div className="panel p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-slate-600">{label}</p>
+          <p className="mt-2 text-3xl font-semibold tracking-tight text-[#172b46]" role="status">
+            {resource.loading ? '…' : count == null ? '—' : number.format(count)}
+          </p>
+        </div>
+        <span className={`grid size-10 shrink-0 place-items-center rounded-lg ${categoryStyle[index]}`}><Icon name={icon} size={19} /></span>
+      </div>
+      {resource.error ? <div className="mt-3 text-xs text-red-700">
+        <p role="alert">{resource.error.message}</p>
+        <button className="mt-2 font-semibold underline" type="button" onClick={resource.reload}>Retry</button>
+      </div> : data && count == null ? <p className="mt-3 text-xs text-slate-500">{data.rows.length} on the first page</p> : null}
+      <a href={path} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[#294565]">View {label.toLowerCase()} <Icon name="arrowRight" size={14} /></a>
     </div>
-    <div className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-[1.8fr_1fr]">
-      <section className="panel min-w-0 p-5 sm:p-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-sm font-semibold text-[#172b46]">Sales overview</h2><p className="mt-1.5 text-[10px] text-slate-400">Revenue performance across your business</p></div><select className="field !py-2" value={period} onChange={event => setPeriod(event.target.value)} aria-label="Sales chart period"><option value="6">Last 6 months</option><option value="3">Last 3 months</option></select></div><div className="mt-6 flex flex-wrap items-end justify-between gap-3"><div><span className="text-[27px] font-semibold tracking-[-0.04em] text-[#172b46]">{money(revenue)}</span><span className="ml-3 rounded-md bg-emerald-50 px-1.5 py-1 text-[9px] font-medium text-emerald-600">↗ 18.6%</span><p className="mt-1 text-[10px] text-slate-400">Total revenue in selected period</p></div><div className="flex gap-4 text-[9px] text-slate-500"><span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#294e7a]" />Marketplace</span><span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#d1ae65]" />Services</span></div></div><SalesChart data={data} /></section>
-      <section className="panel flex flex-col p-5 sm:p-6"><h2 className="text-sm font-semibold text-[#172b46]">Revenue breakdown</h2><p className="mt-1.5 text-[10px] text-slate-400">Where your revenue comes from this month</p><div className="relative mx-auto my-7 flex h-[166px] w-[166px] items-center justify-center rounded-full" style={{ background: 'conic-gradient(#294e7a 0% 57.3%, #fff 57.3% 58.3%, #d1ae65 58.3% 99%, #fff 99% 100%)' }} role="img" aria-label="Marketplace 57.3%, services 42.7%"><div className="flex h-[131px] w-[131px] flex-col items-center justify-center rounded-full bg-white"><span className="text-[9px] text-slate-400">Total revenue</span><span className="mt-1.5 text-[23px] font-semibold tracking-tight text-[#172b46]">67,450</span><span className="mt-1 text-[9px] text-slate-400">EGP</span></div></div><div className="mt-auto space-y-4"><div className="flex items-center gap-2 text-[11px]"><span className="h-2 w-2 rounded-sm bg-[#294e7a]" /><span className="text-slate-500">Marketplace</span><span className="ml-auto font-semibold text-slate-700">EGP 38,650</span><span className="w-10 text-right text-[10px] text-slate-400">57.3%</span></div><div className="flex items-center gap-2 text-[11px]"><span className="h-2 w-2 rounded-sm bg-[#d1ae65]" /><span className="text-slate-500">Services</span><span className="ml-auto font-semibold text-slate-700">EGP 28,800</span><span className="w-10 text-right text-[10px] text-slate-400">42.7%</span></div></div><p className="mt-5 border-t border-slate-100 pt-4 text-center text-[10px] text-slate-400">A healthy mix of products and services.</p></section>
-    </div>
-    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.8fr_1fr]">
-      <section className="panel min-w-0 overflow-hidden"><div className="flex items-center justify-between px-6 py-5"><div><h2 className="text-sm font-semibold text-[#172b46]">Recent orders</h2><p className="mt-1 text-[10px] text-slate-400">The latest from your marketplace</p></div><a href="#/marketplace-orders" className="flex items-center gap-1.5 text-[10px] font-medium text-[#526d91]">View all <Icon name="arrowRight" size={13} /></a></div><div className="overflow-x-auto"><table className="w-full whitespace-nowrap text-left"><thead className="border-y border-slate-100 bg-[#fafbfc]"><tr>{['Order', 'Customer', 'Amount', 'Status'].map(label => <th className="px-5 py-3 text-[9px] font-medium text-slate-400 first:pl-6" key={label}>{label}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{orders.slice(0, 4).map((order, index) => <tr key={order.id}><td className="py-4 pl-6 pr-3 text-[10px] font-medium text-[#526d91]">#{order.id.slice(4)}</td><td className="px-5 py-4"><div className="flex items-center gap-2.5"><Avatar name={order.customer} index={index} /><span className="text-[10px] font-medium text-slate-600">{order.customer}</span></div></td><td className="px-5 py-4 text-[10px] font-medium text-slate-600">{money(order.amount)}</td><td className="px-5 py-4"><StatusBadge status={order.status} /></td></tr>)}</tbody></table></div></section>
-      <section className="panel p-6"><div className="flex items-center justify-between"><div><h2 className="text-sm font-semibold text-[#172b46]">Upcoming appointments</h2><p className="mt-1 text-[10px] text-slate-400">On the schedule for today</p></div><span className="rounded-md bg-slate-100 px-2 py-1 text-[10px] text-slate-500">3 today</span></div><div className="mt-5 divide-y divide-slate-100">{appointments.slice(0, 3).map((item, index) => <div key={item.id} className="flex gap-3 py-4 first:pt-0"><span className={`mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${index === 1 ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}><Icon name={index === 1 ? 'services' : 'home'} size={17} /></span><div className="min-w-0 flex-1"><div className="flex items-center justify-between gap-2"><p className="text-[11px] font-medium text-slate-700">{item.service}</p><span className="whitespace-nowrap text-[9px] text-slate-400">{item.time}</span></div><p className="mt-1 text-[10px] text-slate-400">{item.customer}</p><div className="mt-2"><StatusBadge status={item.status} /></div></div></div>)}</div><a href="#/service-appointments" className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-slate-200 py-2.5 text-[10px] font-medium text-slate-500 hover:bg-slate-50">View all appointments <Icon name="arrowRight" size={13} /></a></section>
-    </div>
-  </>
+  )
+}
+
+const orderColumns = [
+  { key: 'number', label: 'Order', render: row => row.number ?? row.id ?? '—' },
+  { key: 'customer', label: 'Customer' },
+  { key: 'date', label: 'Date', render: row => showDate(row.date) },
+  { key: 'amount', label: 'Amount', render: row => formatAmount(row.amount, row.currency === 'EGY' ? 'EGP' : row.currency) },
+  { key: 'status', label: 'Status', render: row => row.status ? <StatusBadge status={row.status} /> : '—' },
+]
+const appointmentColumns = [
+  { key: 'title', label: 'Appointment', render: row => row.title ?? row.id ?? '—' },
+  { key: 'date', label: 'Schedule', render: row => <div>{showDate(row.date)}{row.from && <p className="mt-1 text-xs text-slate-500">{row.from}</p>}</div> },
+  { key: 'status', label: 'Status', render: row => row.status ? <StatusBadge status={row.status} /> : '—' },
+]
+
+function Activity({ request }) {
+  const loadOrders = useCallback(signal => createCommerceApi(request, '').getOrders({ page: 1, pageSize: 6, scope: 'partner' }, { signal }), [request])
+  const loadAppointments = useCallback(signal => createServicesApi(request).listBookings('appointments', { page: 1, pageSize: 6, ByMe: false }, { signal }), [request])
+  const orders = useApiData(loadOrders)
+  const appointments = useApiData(loadAppointments)
+  const counts = new Map()
+  for (const row of orders.data?.rows ?? []) {
+    const status = String(row.status || 'Unknown')
+    counts.set(status, (counts.get(status) ?? 0) + 1)
+  }
+  return (
+    <>
+      {orders.data?.rows.length > 0 && <section className="panel mb-5 p-5" aria-label="Order statuses">
+        <h2 className="text-sm font-semibold text-[#172b46]">Order statuses</h2>
+        <p className="mb-4 mt-1 text-xs text-slate-500">Based on {orders.data.rows.length} orders from your partner account.</p>
+        <div className="grid gap-x-8 gap-y-3 lg:grid-cols-2">
+          {[...counts].map(([status, count]) => <div key={status} className="grid grid-cols-[minmax(80px,1fr)_3fr_2ch] items-center gap-3 text-xs text-slate-600">
+            <span>{status.replace(/([a-z])([A-Z])/g, '$1 $2')}</span>
+            <progress className="progress w-full text-[#294565]" max={orders.data.rows.length} value={count} aria-label={`${status} orders`} />
+            <span>{count}</span>
+          </div>)}
+        </div>
+      </section>}
+      <div className="grid min-w-0 gap-5 2xl:grid-cols-[1.3fr_1fr]">
+        <DataTable title="Partner orders" description="First page from your partner account" columns={orderColumns} rows={orders.data?.rows}
+          showDetails={false} loading={orders.loading} error={orders.error?.message} onRetry={orders.reload} emptyMessage="No partner orders found."
+          controls={<a className="btn-secondary" href="#/orders">View orders <Icon name="arrowRight" size={14} /></a>} />
+        <DataTable title="Partner appointments" description="First page from your partner account" columns={appointmentColumns} rows={appointments.data?.rows}
+          showDetails={false} loading={appointments.loading} error={appointments.error?.message} onRetry={appointments.reload} emptyMessage="No partner appointments found."
+          controls={<a className="btn-secondary" href="#/appointments?scope=partner">View appointments <Icon name="arrowRight" size={14} /></a>} />
+      </div>
+    </>
+  )
+}
+
+export default function Home({ session }) {
+  const request = session.request
+  const metrics = useMemo(() => {
+    const firstPage = { page: 1, pageSize: 10 }
+    return [
+      { label: 'Services', icon: 'services', path: '#/services', load: signal => createServicesApi(request).listListings('services', firstPage, { signal }) },
+      { label: 'Marketplace products', icon: 'marketplace', path: '#/marketplace/products', load: signal => createCommerceApi(request, 'Marketplace').getProducts(firstPage, { signal }) },
+      { label: 'Store products', icon: 'store', path: '#/store/products', load: signal => createCommerceApi(request, 'Store').getProducts(firstPage, { signal }) },
+      { label: 'Pending companies', icon: 'users', path: '#/users?status=Pending', load: signal => createUsersApi(request).listCompanies({ ...firstPage, status: 'Pending' }, { signal }) },
+    ]
+  }, [request])
+  return (
+    <>
+      <PageHeading eyebrow="OVERVIEW" title="Dashboard overview" description={`Welcome back, ${session.account.name}.`}>
+        <span className="btn-secondary"><Icon name="calendar" size={15} />{dateFormat.format(new Date())}</span>
+      </PageHeading>
+      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric, index) => <OverviewMetric key={metric.label} {...metric} index={index} />)}
+      </div>
+      <Activity request={request} />
+    </>
+  )
 }

@@ -43,6 +43,7 @@ export function createUsersApi(request, { listPath = '', deletePath = '' } = {})
     async getMe(options) {
       return normalizeUser(await request('/api/v1/users/me', options))
     },
+    changePassword: body => request('/api/v1/users/me/change-password', { method: 'POST', body }),
     async list(options) {
       if (!listPath) throw new ApiError('The admin endpoint for listing users has not been provided.')
       if (/\/me\/?(?:\?|$)/i.test(listPath)) throw new ApiError('The current-account endpoint cannot be used as the user directory.')

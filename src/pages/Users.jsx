@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { apiConfig } from '../api/config'
-import { createUsersApi } from '../api/users'
+import { COMPANY_STATUSES, createUsersApi } from '../api/users'
 import CompanyDirectory from '../components/CompanyDirectory'
 import Icon from '../components/Icon'
 import { PageHeading } from '../components/UI'
@@ -12,9 +12,10 @@ const tabs = [
   { id: 'companies', label: 'Companies', icon: 'store' },
 ]
 
-export default function Users({ session }) {
+export default function Users({ session, companyStatus }) {
   const api = useMemo(() => createUsersApi(session.request, apiConfig), [session.request])
-  const [activeTab, setActiveTab] = useState(apiConfig.listPath ? 'individuals' : 'companies')
+  const status = COMPANY_STATUSES.includes(companyStatus) ? companyStatus : ''
+  const [activeTab, setActiveTab] = useState(!status && apiConfig.listPath ? 'individuals' : 'companies')
   const [showAccount, setShowAccount] = useState(false)
 
   function navigateTabs(event, index) {
@@ -44,7 +45,7 @@ export default function Users({ session }) {
         ))}
       </div>
       <div id="users-panel" role="tabpanel" aria-labelledby={`users-tab-${activeTab}`}>
-        {activeTab === 'companies' ? <CompanyDirectory api={api} /> : <UsersTable api={api} currentUser={session.account} />}
+        {activeTab === 'companies' ? <CompanyDirectory api={api} initialStatus={status} /> : <UsersTable api={api} currentUser={session.account} />}
       </div>
       {showAccount && <UserDetails user={session.account} title="My account" onClose={() => setShowAccount(false)} />}
     </>

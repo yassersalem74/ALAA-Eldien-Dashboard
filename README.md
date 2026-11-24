@@ -9,15 +9,15 @@ npm install
 npm run dev
 ```
 
-Each page has its own component in `src/pages`: Home, Users, Services, ServiceAppointments, Marketplace, MarketplaceOrders, and Store. Shared UI lives in `src/components`; demo records live in `src/data/demo.js`.
+Pages live in `src/pages`. Shared UI lives in `src/components` and API adapters live in `src/api`.
 
 Navigation uses hash URLs (for example, `/#/users`) and supports refreshing and browser back/forward navigation without server routing configuration.
 
-Home includes a sales chart with a period selector, revenue breakdown, recent orders, and appointments. Other pages include searchable records or catalogs, category/status filters, pagination, record details, and CSV exports. The layout includes a collapsible mobile sidebar.
+Home shows API-backed service and product counts, pending company reviews, and the first page of partner order and appointment activity for the signed-in account. The order chart counts the orders shown on Home. Store and Marketplace share product and order workflows. All orders includes both customer and partner scopes and displays orders with an unclassified sales channel.
 
 The Users page uses the dashboard's admin session and shows the signed-in account under My account. Its Companies tab lists companies with backend search, status filters, and pagination. Admins can review a company's details and submit an approval or rejection with an optional note.
 
-The dashboard signs in against `https://alaaeldin.runasp.net` by default. It stores the admin access token in browser local storage for the configured backend and revalidates the account on refresh. Signing out, token expiry, or a rejected session clears the saved token. Login calls `POST /api/v1/authentication/login` with `remeberMe` enabled, using the Swagger spelling. Account validation calls `GET /api/v1/users/me`. Both send `Accept-Language: en`. Login expects a JWT string or an object with `accessToken` or `token`.
+The dashboard signs in against `https://alaaeldin.runasp.net` by default. It stores the admin access token in browser local storage for that backend and revalidates the account on refresh. Login calls `POST /api/v1/authentication/login` with `remeberMe` enabled, using the Swagger spelling. Account validation calls `GET /api/v1/users/me`. Login expects a JWT string or an object with `accessToken` or `token`. Enable `VITE_API_USE_COOKIES` for session renewal when the backend supplies a refresh cookie and supports credentialed CORS.
 
 The Individuals tab requires an admin user-directory endpoint. Once configured, it supports search, role filters, and user details. Account type is independent of role. Records without an account type are labeled Unclassified. Deletion requires an admin delete-by-ID endpoint. `DELETE /api/v1/users/me` belongs to the signed-in account.
 

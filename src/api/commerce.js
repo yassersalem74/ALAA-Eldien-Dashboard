@@ -4,30 +4,79 @@ import { field, queryPath, readPage } from './pagination.js'
 const categoryPath = '/api/v1/product-categories'
 const subcategoryPath = '/api/v1/product-subcategories'
 const formPath = '/api/v1/product-forms'
+const productPath = '/api/v1/product'
+const storePath = '/api/v1/stores'
 const byCategory = id => `${subcategoryPath}/product-category/${encodeURIComponent(id)}`
+const withId = (path, id) => `${path}/${encodeURIComponent(id)}`
+const ratingsPath = id => `${withId(productPath, id)}/ratings`
 
 export function createCommerceApi(request, salesChannel) {
   const orderChannel = salesChannel.toLowerCase()
+  async function getOrders({ page, pageSize, status, scope }, options) {
+    const data = await request(queryPath(`/api/v1/orders/${scope === 'customer' ? 'customer' : 'partner'}`, { page, pageSize, status }), options)
+    const result = readPage(data, 'orders', page, pageSize)
+    return { ...result, rows: result.rows.map(orderRow) }
+  }
   return {
     getCategories: options => request(queryPath(categoryPath, { salesChannel }), options),
     getSubcategories: (id, options) => request(byCategory(id), options),
-    async getProducts({ page, pageSize, categoryId, subcategoryId, search }, options) {
-      const data = await request(queryPath('/api/v1/product', {
-        page, pageSize, categoryId, subcategoryId, search, salesChannel,
+    async getProducts({ page, pageSize, categoryId, subcategoryId, search, minPrice, maxPrice }, options) {
+      const data = await request(queryPath(productPath, {
+        page, pageSize, categoryId, subcategoryId, search, minPrice, maxPrice, salesChannel: salesChannel || undefined,
       }), options)
       const result = readPage(data, 'products', page, pageSize)
       return { ...result, rows: result.rows.map(productRow) }
     },
     async getPartnerOrders({ page, pageSize, status }, options) {
-      const data = await request(queryPath('/api/v1/orders/partner', { page, pageSize, status }), options)
-      const result = readPage(data, 'orders', page, pageSize)
-      const orders = result.rows.map(orderRow)
+      const result = await getOrders({ page, pageSize, status, scope: 'partner' }, options)
       return {
         hasNext: result.hasNext,
-        rows: orders.filter(order => order.salesChannel === orderChannel),
-        hasUnclassifiedOrders: orders.some(order => !order.salesChannel),
+        rows: result.rows.filter(order => order.salesChannel === orderChannel),
+        hasUnclassifiedOrders: result.rows.some(order => !order.salesChannel),
       }
     },
+    getOrders,
+    createOrder: body => request('/api/v1/orders', { method: 'POST', body }),
+    changeOrderStatus: (id, body) => request(`${withId('/api/v1/orders', id)}/status`, { method: 'PUT', body }),
+    async getProduct(id, options) {
+      const data = await request(withId(productPath, id), options)
+      return productRow(field(data, 'product') ?? data)
+    },
+    saveProduct(formId, id, body) {
+      const path = withId(`${productPath}/product-form`, formId)
+      return request(id == null ? path : withId(path, id), { method: id == null ? 'POST' : 'PUT', body })
+    },
+    deleteProduct: id => request(withId(productPath, id), { method: 'DELETE' }),
+    async getRatings(id, options) {
+      const data = await request(ratingsPath(id), options)
+      return readPage(data, 'ratings', 1, 10).rows.map(rating => ({
+        id: field(rating, 'id'),
+        userId: field(rating, 'userId') ?? field(rating, 'customerId'),
+        user: field(rating, 'userName') ?? recordName(field(rating, 'user')),
+        isMine: field(rating, 'isMine') === true,
+        rating: field(rating, 'rating') ?? field(rating, 'star'),
+        feedback: field(rating, 'feedback'),
+        concurrencyStamp: field(rating, 'concurrencyStamp'),
+      }))
+    },
+    saveRating: (id, body, updating) => request(ratingsPath(id), { method: updating ? 'PUT' : 'POST', body }),
+    async getStores(options) {
+      const data = await request(storePath, options)
+      return readPage(data, 'stores', 1, 10).rows.map(storeRow)
+    },
+    async getStore(id, options) {
+      try {
+        const data = await request(withId(storePath, id), options)
+        return data == null ? null : storeRow(field(data, 'store') ?? data)
+      } catch (error) {
+        if (id === 'me' && error.status === 404) return null
+        throw error
+      }
+    },
+    saveStore(id, body) {
+      return request(id == null ? storePath : withId(storePath, id), { method: id == null ? 'POST' : 'PUT', body })
+    },
+    deleteStore: id => request(withId(storePath, id), { method: 'DELETE' }),
     async getForm(id, options) {
       try {
         return await request(`${formPath}/product-subcategory/${encodeURIComponent(id)}`, options)
@@ -70,10 +119,14 @@ function recordImage(image) {
 }
 
 function productRow(product) {
-  const attributes = field(product, 'keyValuePairs')
-  const productName = Array.isArray(attributes)
-    ? field(attributes.find(item => ['productname', 'productnamee'].includes(String(field(item, 'key')).toLowerCase())), 'value')
-    : field(attributes, 'productName')
+  let attributes = field(product, 'keyValuePairs') ?? field(product, 'keyValuePairsJson')
+  if (typeof attributes === 'string') {
+    try { attributes = JSON.parse(attributes) } catch { attributes = undefined }
+  }
+  const values = Array.isArray(attributes)
+    ? Object.fromEntries(attributes.filter(item => typeof field(item, 'key') === 'string').map(item => [field(item, 'key'), field(item, 'value')]))
+    : attributes && typeof attributes === 'object' ? attributes : {}
+  const productName = Object.entries(values).find(([key]) => ['productname', 'productnamee'].includes(key.toLowerCase()))?.[1]
   const category = field(product, 'category') ?? field(product, 'productCategory')
   const subcategory = field(product, 'subcategory') ?? field(product, 'productSubcategory')
 
@@ -88,6 +141,28 @@ function productRow(product) {
     currency: field(product, 'currency'),
     quantity: field(product, 'totalQuantity') ?? field(product, 'quantity'),
     image: recordImage(field(product, 'mainImageUrl') ?? field(product, 'mainImage') ?? field(product, 'imageUrl')),
+    images: imageEntries(field(product, 'images') ?? field(product, 'imageUrls')),
+    description: field(product, 'description'),
+    values,
+    formId: field(product, 'productFormId') ?? field(product, 'formId') ?? field(field(product, 'productForm'), 'id'),
+    concurrencyStamp: field(product, 'concurrencyStamp'),
+  }
+}
+
+function imageEntries(value) {
+  return Array.isArray(value) ? value.map(recordImage).filter(Boolean) : []
+}
+
+function storeRow(store) {
+  const categories = field(store, 'categories') ?? field(store, 'productCategories')
+  const ids = field(store, 'categoryIds')
+  return {
+    id: field(store, 'id') ?? field(store, 'storeId'),
+    name: field(store, 'name') ?? field(store, 'storeName'),
+    image: recordImage(field(store, 'imageUrl') ?? field(store, 'image')),
+    categoryIds: Array.isArray(ids) ? ids : Array.isArray(categories) ? categories.map(item => field(item, 'id') ?? field(item, 'categoryId')).filter(Boolean) : [],
+    categoryNames: Array.isArray(categories) ? categories.map(recordName).filter(Boolean) : [],
+    concurrencyStamp: field(store, 'concurrencyStamp'),
   }
 }
 
@@ -111,6 +186,12 @@ function orderRow(order) {
     payment: field(order, 'paymentMethod'),
     status: field(order, 'status'),
     salesChannel,
+    concurrencyStamp: field(order, 'concurrencyStamp'),
+    lineItems: Array.isArray(items) ? items.map(item => ({
+      name: field(item, 'productName') ?? recordName(field(item, 'product')),
+      quantity: field(item, 'quantity'),
+      id: field(item, 'id') ?? field(item, 'productId'),
+    })) : [],
   }
 }
 

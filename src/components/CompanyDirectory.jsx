@@ -9,10 +9,10 @@ import { CompanyReviewDialog } from './UserDialogs'
 const pageSize = 10
 const dateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'Africa/Cairo' })
 
-export default function CompanyDirectory({ api }) {
+export default function CompanyDirectory({ api, initialStatus = '' }) {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState(initialStatus)
   const [selected, setSelected] = useState(null)
   const [notice, setNotice] = useState('')
   const load = useCallback(signal => api.listCompanies({ page, pageSize, search, status }, { signal }), [api, page, search, status])
