@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { signInAdmin } from './api/adminSession'
+import { adminTokenKey, clearSavedAdminToken, getSavedAdminToken, saveAdminToken, sessionExpiredMessage, signInAdmin, verifyAdminSession } from './api/adminSession'
 import AdminLogin from './pages/AdminLogin'
 import Icon from './components/Icon'
 import EmptyPage from './pages/EmptyPage'
@@ -108,12 +108,48 @@ function Dashboard({ session, onSignOut }) {
   </div>
 }
 
+const signedOut = { session: null, pendingToken: null, notice: '', restoreError: '' }
+
 export default function App() {
-  const [{ session, notice }, setAccess] = useState({ session: null, notice: '' })
+  const [{ session, pendingToken, notice, restoreError }, setAccess] = useState(() => ({
+    ...signedOut, pendingToken: getSavedAdminToken(),
+  }))
+
   const expireSession = useCallback(token => {
-    setAccess(current => current.session?.token === token
-      ? { session: null, notice: 'Your session expired. Please sign in again.' }
+    clearSavedAdminToken(token)
+    setAccess(current => current.session?.token === token || current.pendingToken === token
+      ? { ...signedOut, notice: sessionExpiredMessage }
       : current)
+  }, [])
+
+  useEffect(() => {
+    if (!pendingToken || restoreError) return
+    const controller = new AbortController()
+    verifyAdminSession(pendingToken, expireSession, { signal: controller.signal }).then(restored => {
+      if (controller.signal.aborted) return
+      setAccess(current => current.pendingToken === pendingToken ? { ...signedOut, session: restored } : current)
+    }, error => {
+      if (controller.signal.aborted) return
+      const rejected = error.status === 401 || error.status === 403
+      if (rejected) clearSavedAdminToken(pendingToken)
+      setAccess(current => {
+        if (current.pendingToken !== pendingToken) return current
+        return rejected ? { ...signedOut, notice: error.message } : { ...current, restoreError: error.message }
+      })
+    })
+    return () => controller.abort()
+  }, [pendingToken, restoreError, expireSession])
+
+  useEffect(() => {
+    function syncSession(event) {
+      if (event.key !== adminTokenKey && event.key !== null) return
+      const savedToken = getSavedAdminToken()
+      setAccess(current => (current.session?.token ?? current.pendingToken) === savedToken
+        ? current
+        : { ...signedOut, pendingToken: savedToken })
+    }
+    window.addEventListener('storage', syncSession)
+    return () => window.removeEventListener('storage', syncSession)
   }, [])
 
   useEffect(() => {
@@ -130,9 +166,21 @@ export default function App() {
 
   async function handleSignIn(email, password) {
     const signedIn = await signInAdmin(email, password, expireSession)
-    setAccess({ session: signedIn, notice: '' })
+    saveAdminToken(signedIn.token)
+    setAccess({ ...signedOut, session: signedIn })
   }
 
-  if (!session) return <AdminLogin notice={notice} onSignIn={handleSignIn} />
-  return <Dashboard session={session} onSignOut={() => setAccess({ session: null, notice: '' })} />
+  if (pendingToken && !restoreError) {
+    return <main className="grid min-h-dvh place-items-center bg-[#f6f7f9] px-4 text-slate-600">
+      <p role="status" className="text-sm">Restoring your session…</p>
+    </main>
+  }
+
+  if (!session) return <AdminLogin notice={restoreError || notice} onSignIn={handleSignIn}
+    onRetry={restoreError ? () => setAccess(current => ({ ...current, restoreError: '' })) : undefined} />
+
+  return <Dashboard session={session} onSignOut={() => {
+    clearSavedAdminToken(session.token)
+    setAccess(signedOut)
+  }} />
 }

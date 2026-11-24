@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 import { formRecord } from '../api/commerce'
 import useCommerceData from '../hooks/useCommerceData'
@@ -7,6 +7,7 @@ import './marketplaceForm.css'
 
 const blankRule = { type: "Required", value: "", description: "", messageEn: "", messageAr: "" };
 const blankField = { label: "", key: "", placeholder: "", type: "Text", optionsText: "", validations: [] };
+const duplicateFormName = "DuplicateFormName";
 
 function RuleEditor({ rule, onChange, onDelete }) {
   return (
@@ -70,8 +71,8 @@ function FieldEditor({ field, position, count, update, move, remove }) {
   );
 }
 
-function FormEditor({ api, form, subcategoryId, onSaved }) {
-  const [name, setName] = useState(form?.name || "Product Details");
+function FormEditor({ api, form, subcategoryId, defaultName, onSaved }) {
+  const [name, setName] = useState(form?.name || defaultName);
   const [fields, setFields] = useState(() => (form?.fields || []).map((field, index) => ({
     ...field,
     localId: `field-${index}`,
@@ -81,6 +82,12 @@ function FormEditor({ api, form, subcategoryId, onSaved }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const nameInput = useRef(null);
+  const nameTaken = error === duplicateFormName;
+
+  useEffect(() => {
+    if (nameTaken) nameInput.current?.focus();
+  }, [nameTaken]);
 
   async function save(event) {
     event.preventDefault();
@@ -105,7 +112,7 @@ function FormEditor({ api, form, subcategoryId, onSaved }) {
       });
       onSaved("Form saved.");
     } catch (failure) {
-      setError(failure.message);
+      setError(failure.code === duplicateFormName ? duplicateFormName : failure.message);
     } finally {
       setBusy(false);
     }
@@ -128,7 +135,15 @@ function FormEditor({ api, form, subcategoryId, onSaved }) {
   return (
     <form className="market-stack" onSubmit={save}>
       <fieldset className="market-stack" disabled={busy || confirmDelete}>
-        <label className="market-form-name">Form name <input value={name} onChange={(event) => setName(event.target.value)} required /></label>
+        <div className="market-form-name grid gap-1.5">
+          <label>Form name
+            <input ref={nameInput} value={name} onChange={(event) => {
+              setName(event.target.value);
+              if (nameTaken) setError("");
+            }} aria-invalid={nameTaken || undefined} aria-describedby={nameTaken ? "product-form-name-error" : undefined} required />
+          </label>
+          {nameTaken && <p id="product-form-name-error" className="market-error" role="alert">This form name is already in use. Enter a different name.</p>}
+        </div>
         {fields.map((field, index) => (
           <FieldEditor key={field.localId} field={field} position={index} count={fields.length}
             update={(changes) => setFields((items) => items.map((item) => item.localId === field.localId ? { ...item, ...changes } : item))}
@@ -143,7 +158,7 @@ function FormEditor({ api, form, subcategoryId, onSaved }) {
           setFields((items) => [...items, { ...blankField, localId: crypto.randomUUID() }])
         }><Icon name="plus" size={17} /> Add field</button></div>
       </fieldset>
-      {error && <p className="market-error" role="alert">{error}</p>}
+      {error && !nameTaken && <p className="market-error" role="alert">{error}</p>}
       {confirmDelete ? (
         <div className="market-editor">
           <p>Delete this product form?</p>
@@ -162,7 +177,7 @@ function FormEditor({ api, form, subcategoryId, onSaved }) {
   );
 }
 
-export default function ProductFormEditor({ api, subcategoryId }) {
+export default function ProductFormEditor({ api, subcategoryId, defaultName }) {
   const load = useCallback(async signal => formRecord(await api.getForm(subcategoryId, { signal })), [api, subcategoryId])
   const resource = useCommerceData(load)
   const [notice, setNotice] = useState('')
@@ -175,7 +190,7 @@ export default function ProductFormEditor({ api, subcategoryId }) {
         <p className="market-error" role="alert">{resource.error.message}</p>
         <button className="btn-secondary mt-2" type="button" onClick={resource.reload}>Retry</button>
       </div>}
-      {!resource.loading && !resource.error && <FormEditor api={api} form={resource.data} subcategoryId={subcategoryId}
+      {!resource.loading && !resource.error && <FormEditor api={api} form={resource.data} subcategoryId={subcategoryId} defaultName={defaultName}
         onSaved={message => { setNotice(message); resource.reload() }} />}
     </section>
   )

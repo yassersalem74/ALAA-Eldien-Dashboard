@@ -167,7 +167,10 @@ export default function CommerceCategories({ view, categoryId, subcategoryId, re
       ) : subcategoryId ? (
         <StatusPanel resource={categories} empty={!category && `${salesChannel} category not found.`}>
           <StatusPanel resource={subcategories} empty={!subcategory && 'Subcategory not found for this category.'}>
-            <ProductFormEditor api={api} subcategoryId={subcategoryId} />
+            {category && subcategory && (
+              <ProductFormEditor api={api} subcategoryId={subcategoryId}
+                defaultName={`${subcategory.name} Product Details (${salesChannel} / ${category.name})`} />
+            )}
           </StatusPanel>
         </StatusPanel>
       ) : categoryId && !categories.loading && !categories.error && !category ? (

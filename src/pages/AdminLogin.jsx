@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
 
-export default function AdminLogin({ onSignIn, notice }) {
+export default function AdminLogin({ onSignIn, notice, onRetry }) {
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -39,7 +39,12 @@ export default function AdminLogin({ onSignIn, notice }) {
           </div>
         </div>
         <h1 id="admin-login-title" className="mb-5 text-[26px] leading-tight font-semibold text-[#172b46]">Sign in</h1>
-        {notice && !error && <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900" role="status">{notice}</p>}
+        {notice && !error && (
+          <div className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+            <p role="status">{notice}</p>
+            {onRetry && <button className="btn-secondary mt-2" type="button" onClick={onRetry} disabled={busy}>Retry session</button>}
+          </div>
+        )}
         <form className="space-y-4" onSubmit={submit} aria-busy={busy}>
           <div>
             <label className="mb-2 block text-sm font-medium" htmlFor="admin-email">Email</label>
