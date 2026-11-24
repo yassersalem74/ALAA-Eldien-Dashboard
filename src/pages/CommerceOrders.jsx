@@ -3,7 +3,7 @@ import { createCommerceApi } from '../api/commerce'
 import DataTable from '../components/DataTable'
 import { PageHeading, StatusBadge } from '../components/UI'
 import formatAmount from '../components/formatAmount'
-import useCommerceData from '../hooks/useCommerceData'
+import useApiData from '../hooks/useApiData'
 
 const pageSize = 10
 const statuses = {
@@ -31,7 +31,7 @@ export default function CommerceOrders({ request, salesChannel }) {
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
   const loadOrders = useCallback(signal => api.getPartnerOrders({ page, pageSize, status }, { signal }), [api, page, status])
-  const orders = useCommerceData(loadOrders)
+  const orders = useApiData(loadOrders)
   const forbidden = orders.error?.status === 403
 
   return (

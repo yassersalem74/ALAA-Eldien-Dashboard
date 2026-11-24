@@ -4,7 +4,7 @@ import DataTable from '../components/DataTable'
 import Icon from '../components/Icon'
 import { PageHeading, TableThumbnail } from '../components/UI'
 import formatAmount from '../components/formatAmount'
-import useCommerceData from '../hooks/useCommerceData'
+import useApiData from '../hooks/useApiData'
 
 const pageSize = 10
 const columns = [
@@ -38,9 +38,9 @@ export default function CommerceProducts({ request, salesChannel }) {
   const loadProducts = useCallback(signal => api.getProducts({
     page, pageSize, categoryId, subcategoryId, search,
   }, { signal }), [api, page, categoryId, subcategoryId, search])
-  const categories = useCommerceData(loadCategories)
-  const subcategories = useCommerceData(loadSubcategories, Boolean(categoryId))
-  const products = useCommerceData(loadProducts)
+  const categories = useApiData(loadCategories)
+  const subcategories = useApiData(loadSubcategories, Boolean(categoryId))
+  const products = useApiData(loadProducts)
   const rows = products.data?.rows.map(row => ({
     ...row,
     category: row.category ?? categories.data?.find(category => category.id === String(row.categoryId))?.name,

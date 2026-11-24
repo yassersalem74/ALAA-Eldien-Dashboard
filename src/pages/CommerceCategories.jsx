@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { categoryRows, createCommerceApi } from '../api/commerce'
-import useCommerceData from '../hooks/useCommerceData'
+import useApiData from '../hooks/useApiData'
 import DataTable from '../components/DataTable'
 import Icon from '../components/Icon'
 import { PageHeading, TableThumbnail } from '../components/UI'
@@ -129,7 +129,7 @@ export default function CommerceCategories({ view, categoryId, subcategoryId, re
   const channelPath = `#/${salesChannel.toLowerCase()}`
   const paths = { categories: `${channelPath}/categories`, subcategories: `${channelPath}/sub-categories` }
   const loadCategories = useCallback(async signal => categoryRows(await api.getCategories({ signal })), [api])
-  const categories = useCommerceData(loadCategories)
+  const categories = useApiData(loadCategories)
   const category = categories.data?.find(row => row.id === categoryId)
   const isSubcategoryView = view === 'sub-categories' || Boolean(categoryId)
   const loadSubcategories = useCallback(async signal => {
@@ -140,7 +140,7 @@ export default function CommerceCategories({ view, categoryId, subcategoryId, re
     }))
     return groups.flat()
   }, [api, categories.data, category, categoryId])
-  const subcategories = useCommerceData(loadSubcategories,
+  const subcategories = useApiData(loadSubcategories,
     isSubcategoryView && Boolean(categoryId ? category : categories.data))
   const subcategory = subcategories.data?.find(row => row.id === subcategoryId)
   const pageTitle = subcategoryId ? 'Product form' : isSubcategoryView ? 'Subcategories' : 'Categories'

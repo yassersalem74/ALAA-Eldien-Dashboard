@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Icon from './Icon'
 import { formRecord } from '../api/commerce'
-import useCommerceData from '../hooks/useCommerceData'
+import useApiData from '../hooks/useApiData'
 import { CHOICE_TYPES, FIELD_TYPES, VALIDATION_TYPES, configurationError, prepareProductFields } from './marketplaceFormRules'
 import './marketplaceForm.css'
 
@@ -179,7 +179,7 @@ function FormEditor({ api, form, subcategoryId, defaultName, onSaved }) {
 
 export default function ProductFormEditor({ api, subcategoryId, defaultName }) {
   const load = useCallback(async signal => formRecord(await api.getForm(subcategoryId, { signal })), [api, subcategoryId])
-  const resource = useCommerceData(load)
+  const resource = useApiData(load)
   const [notice, setNotice] = useState('')
 
   return (

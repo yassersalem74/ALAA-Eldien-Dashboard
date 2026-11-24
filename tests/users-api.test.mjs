@@ -67,6 +67,41 @@ test('admin list supports an explicit items response; delete encodes IDs and pro
   assert.deepEqual(calls[1], { path: '/admin/users/a%2Fb', method: 'DELETE' })
 })
 
+test('company directory sends documented filters and preserves pagination and review fields', async () => {
+  const signal = new AbortController().signal
+  const api = createUsersApi(async (path, options) => {
+    const url = new URL(path, 'https://backend.example')
+    assert.equal(url.pathname, '/api/v1/admin/companies')
+    assert.deepEqual(Object.fromEntries(url.searchParams), {
+      pageNumber: '2', pageSize: '10', search: 'A & B', status: 'Pending',
+    })
+    assert.equal(options.signal, signal)
+    return {
+      Items: [{ CompanyId: 'company-1', CompanyName: 'A & B', CompanyStatus: 'pending', ConcurrencyStamp: 'rev-1', User: { Email: 'team@example.com' } }],
+      Pagination: { TotalCount: 21 },
+    }
+  })
+
+  const result = await api.listCompanies({ page: 2, pageSize: 10, search: 'A & B', status: 'Pending' }, { signal })
+  assert.equal(result.total, 21)
+  assert.equal(result.hasNext, true)
+  assert.deepEqual(result.rows.map(({ id, name, status, email, concurrencyStamp }) => ({ id, name, status, email, concurrencyStamp })), [
+    { id: 'company-1', name: 'A & B', status: 'Pending', email: 'team@example.com', concurrencyStamp: 'rev-1' },
+  ])
+})
+
+test('company review sends a decision, note, and concurrency stamp to the encoded company ID', async () => {
+  const calls = []
+  const api = createUsersApi(async (path, options) => { calls.push({ path, ...options }) })
+  await api.reviewCompany('company/1', { isApproved: false, adminNote: '  Needs review  ', concurrencyStamp: 'rev-1' })
+  assert.deepEqual(calls, [{
+    path: '/api/v1/admin/companies/company%2F1', method: 'PUT',
+    body: { isApproved: false, adminNote: 'Needs review', concurrencyStamp: 'rev-1' },
+  }])
+  await assert.rejects(api.reviewCompany('', {}), /ID is required/)
+  assert.equal(calls.length, 1)
+})
+
 test('login sends the Swagger request field names and refuses success messages without JWTs', async () => {
   let captured
   const auth = createAuthenticationApi(async (path, options) => { captured = { path, ...options }; return { accessToken: 'header.payload.signature' } })

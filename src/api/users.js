@@ -1,6 +1,26 @@
 import { ApiError } from './client.js'
+import { field, queryPath, readPage } from './pagination.js'
 
-export const USER_ROLES = ['SuperAdmin', 'Admin', 'Provider', 'Company', 'AlaaEldin']
+const companiesPath = '/api/v1/admin/companies'
+export const USER_ROLES = ['SuperAdmin', 'Admin', 'Provider', 'Company', 'CompanyCandidate', 'AlaaEldin']
+export const COMPANY_STATUSES = ['Pending', 'Approved', 'Rejected']
+
+function normalizeCompany(company) {
+  if (!company || typeof company !== 'object' || Array.isArray(company)) throw new ApiError('The backend returned an invalid company record.')
+  const contact = field(company, 'user')
+  const rawStatus = field(company, 'companyStatus') ?? field(company, 'status')
+  const status = typeof rawStatus === 'string' ? rawStatus.trim() : ''
+  return {
+    id: field(company, 'companyId') ?? field(company, 'id'),
+    name: field(company, 'companyName') || field(company, 'name') || 'Unnamed company',
+    email: field(company, 'email') ?? field(company, 'companyEmail') ?? field(contact, 'email'),
+    phone: field(company, 'phoneNumber') ?? field(company, 'phone') ?? field(contact, 'phoneNumber'),
+    submitted: field(company, 'createdAt') ?? field(company, 'createdOn'),
+    status: COMPANY_STATUSES.find(value => value.toLowerCase() === status.toLowerCase()) ?? (status || 'Not provided'),
+    adminNote: field(company, 'adminNote') ?? '',
+    concurrencyStamp: field(company, 'concurrencyStamp'),
+  }
+}
 
 export function normalizeUser(user) {
   if (!user || typeof user !== 'object' || Array.isArray(user)) throw new ApiError('The backend returned an invalid user record.')
@@ -30,6 +50,18 @@ export function createUsersApi(request, { listPath = '', deletePath = '' } = {})
       const records = Array.isArray(data) ? data : data?.items
       if (!Array.isArray(records)) throw new ApiError('Expected a users array or an object containing items. Confirm the admin response schema.')
       return { users: records.map(normalizeUser), total: Array.isArray(data) ? data.length : (data.totalCount ?? records.length) }
+    },
+    async listCompanies({ page, pageSize, search, status }, options) {
+      const data = await request(queryPath(companiesPath, { pageNumber: page, pageSize, search, status }), options)
+      const result = readPage(data, 'companies', page, pageSize)
+      return { ...result, rows: result.rows.map(normalizeCompany) }
+    },
+    async reviewCompany(id, { isApproved, adminNote, concurrencyStamp }) {
+      if (id == null || String(id).trim() === '') throw new ApiError('A company ID is required.')
+      return request(`${companiesPath}/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: { isApproved, adminNote: adminNote?.trim() || null, concurrencyStamp: concurrencyStamp ?? null },
+      })
     },
     async deleteUser(id, options) {
       if (!deletePath || !deletePath.includes('{id}')) throw new ApiError('An admin delete endpoint containing {id} is required.')

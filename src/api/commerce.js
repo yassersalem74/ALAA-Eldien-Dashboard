@@ -1,32 +1,25 @@
 import { ApiError } from './client.js'
+import { field, queryPath, readPage } from './pagination.js'
 
 const categoryPath = '/api/v1/product-categories'
 const subcategoryPath = '/api/v1/product-subcategories'
 const formPath = '/api/v1/product-forms'
 const byCategory = id => `${subcategoryPath}/product-category/${encodeURIComponent(id)}`
 
-function listPath(path, values) {
-  const query = new URLSearchParams()
-  for (const [key, value] of Object.entries(values)) {
-    if (value != null && value !== '') query.set(key, value)
-  }
-  return `${path}?${query}`
-}
-
 export function createCommerceApi(request, salesChannel) {
   const orderChannel = salesChannel.toLowerCase()
   return {
-    getCategories: options => request(listPath(categoryPath, { salesChannel }), options),
+    getCategories: options => request(queryPath(categoryPath, { salesChannel }), options),
     getSubcategories: (id, options) => request(byCategory(id), options),
     async getProducts({ page, pageSize, categoryId, subcategoryId, search }, options) {
-      const data = await request(listPath('/api/v1/product', {
+      const data = await request(queryPath('/api/v1/product', {
         page, pageSize, categoryId, subcategoryId, search, salesChannel,
       }), options)
       const result = readPage(data, 'products', page, pageSize)
       return { ...result, rows: result.rows.map(productRow) }
     },
     async getPartnerOrders({ page, pageSize, status }, options) {
-      const data = await request(listPath('/api/v1/orders/partner', { page, pageSize, status }), options)
+      const data = await request(queryPath('/api/v1/orders/partner', { page, pageSize, status }), options)
       const result = readPage(data, 'orders', page, pageSize)
       const orders = result.rows.map(orderRow)
       return {
@@ -66,22 +59,6 @@ export function createCommerceApi(request, salesChannel) {
       return request(`/api/v1/admin/product-forms/${encodeURIComponent(id)}`, { method: 'DELETE' })
     },
   }
-}
-
-const field = (data, key) => data?.[key] ?? data?.[key[0].toUpperCase() + key.slice(1)]
-
-function readPage(data, entity, page, pageSize) {
-  const rows = [data, ...['items', entity, 'results', 'data'].map(key => field(data, key))].find(Array.isArray)
-  if (!rows) throw new ApiError(`The API did not return a list of ${entity}.`)
-
-  const pagination = field(data, 'pagination') ?? data
-  const count = field(pagination, 'totalCount') ?? field(pagination, 'totalItems') ?? field(pagination, 'totalRecords')
-  const total = count != null && Number.isInteger(Number(count)) && Number(count) >= 0 ? Number(count) : undefined
-  const totalPages = field(pagination, 'totalPages')
-  const next = field(pagination, 'hasNextPage')
-  const limit = Number(field(pagination, 'pageSize')) || pageSize
-  const hasNext = typeof next === 'boolean' ? next : totalPages != null ? page < totalPages : total != null ? page * limit < total : rows.length >= limit
-  return { rows, total, hasNext, pageSize: limit }
 }
 
 function recordName(record) {
