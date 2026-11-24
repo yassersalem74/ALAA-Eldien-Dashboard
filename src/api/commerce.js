@@ -13,13 +13,14 @@ function listPath(path, values) {
   return `${path}?${query}`
 }
 
-export function createMarketplaceApi(request) {
+export function createCommerceApi(request, salesChannel) {
+  const orderChannel = salesChannel.toLowerCase()
   return {
-    getCategories: options => request(`${categoryPath}?salesChannel=Marketplace`, options),
+    getCategories: options => request(listPath(categoryPath, { salesChannel }), options),
     getSubcategories: (id, options) => request(byCategory(id), options),
     async getProducts({ page, pageSize, categoryId, subcategoryId, search }, options) {
       const data = await request(listPath('/api/v1/product', {
-        page, pageSize, categoryId, subcategoryId, search, salesChannel: 'Marketplace',
+        page, pageSize, categoryId, subcategoryId, search, salesChannel,
       }), options)
       const result = readPage(data, 'products', page, pageSize)
       return { ...result, rows: result.rows.map(productRow) }
@@ -30,7 +31,7 @@ export function createMarketplaceApi(request) {
       const orders = result.rows.map(orderRow)
       return {
         hasNext: result.hasNext,
-        rows: orders.filter(order => order.salesChannel === 'marketplace'),
+        rows: orders.filter(order => order.salesChannel === orderChannel),
         hasUnclassifiedOrders: orders.some(order => !order.salesChannel),
       }
     },
@@ -47,7 +48,7 @@ export function createMarketplaceApi(request) {
       const body = new FormData()
       body.set('nameEn', nameEn)
       body.set('nameAr', nameAr)
-      if (!categoryId) body.set('salesChannel', 'Marketplace')
+      if (!categoryId) body.set('salesChannel', salesChannel)
       if (image?.size) body.set('imageFile', image)
       if (id && concurrencyStamp) body.set('concurrencyStamp', concurrencyStamp)
       const path = id ? `${base}/${encodeURIComponent(id)}` : categoryId ? `${base}/category/${encodeURIComponent(categoryId)}` : base

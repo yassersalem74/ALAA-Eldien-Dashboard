@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
-import { createMarketplaceApi } from '../api/marketplace'
+import { createCommerceApi } from '../api/commerce'
 import DataTable from '../components/DataTable'
 import { PageHeading, StatusBadge } from '../components/UI'
 import formatAmount from '../components/formatAmount'
-import useMarketplaceData from '../hooks/useMarketplaceData'
+import useCommerceData from '../hooks/useCommerceData'
 
 const pageSize = 10
 const statuses = {
@@ -26,21 +26,21 @@ const columns = [
   { key: 'status', label: 'Order status', render: row => row.status ? <StatusBadge status={statuses[row.status] ?? row.status} /> : '—' },
 ]
 
-export default function MarketplaceOrders({ request }) {
-  const api = useMemo(() => createMarketplaceApi(request), [request])
+export default function CommerceOrders({ request, salesChannel }) {
+  const api = useMemo(() => createCommerceApi(request, salesChannel), [request, salesChannel])
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
   const loadOrders = useCallback(signal => api.getPartnerOrders({ page, pageSize, status }, { signal }), [api, page, status])
-  const orders = useMarketplaceData(loadOrders)
+  const orders = useCommerceData(loadOrders)
   const forbidden = orders.error?.status === 403
 
   return (
     <>
-      <PageHeading eyebrow="MARKETPLACE" title="Orders" description="Marketplace orders available to the signed-in partner account." />
+      <PageHeading eyebrow={salesChannel.toUpperCase()} title="Orders" description={`${salesChannel} orders available to the signed-in partner account.`} />
       <DataTable title="Order history" rows={orders.data?.rows} columns={columns} pageSize={pageSize} showDetails={false}
         loading={orders.loading} error={forbidden ? 'This account does not have access to partner orders.' : orders.error?.message}
-        onRetry={forbidden ? undefined : orders.reload} emptyMessage="No Marketplace orders on this page."
-        description={orders.data?.hasUnclassifiedOrders ? 'Only orders identified as Marketplace are shown.' : undefined}
+        onRetry={forbidden ? undefined : orders.reload} emptyMessage={`No ${salesChannel} orders on this page.`}
+        description={orders.data?.hasUnclassifiedOrders ? `Only orders identified as ${salesChannel} are shown.` : undefined}
         pagination={{ page, hasNext: orders.data?.hasNext, onChange: setPage }}
         controls={
           <select className="field" aria-label="Filter orders by status" value={status} onChange={event => {

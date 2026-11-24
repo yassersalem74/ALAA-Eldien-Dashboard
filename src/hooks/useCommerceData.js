@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export default function useMarketplaceData(load, enabled = true) {
+export default function useCommerceData(load, enabled = true) {
   const [version, setVersion] = useState(0)
   const [result, setResult] = useState(null)
   const current = result?.load === load && result.version === version ? result : null

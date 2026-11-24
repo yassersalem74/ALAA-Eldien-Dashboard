@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from 'react'
-import { categoryRows, createMarketplaceApi } from '../api/marketplace'
+import { categoryRows, createCommerceApi } from '../api/commerce'
 import DataTable from '../components/DataTable'
 import Icon from '../components/Icon'
 import { PageHeading, TableThumbnail } from '../components/UI'
 import formatAmount from '../components/formatAmount'
-import useMarketplaceData from '../hooks/useMarketplaceData'
+import useCommerceData from '../hooks/useCommerceData'
 
 const pageSize = 10
 const columns = [
@@ -26,8 +26,8 @@ const columns = [
   { key: 'quantity', label: 'Quantity' },
 ]
 
-export default function Marketplace({ request }) {
-  const api = useMemo(() => createMarketplaceApi(request), [request])
+export default function CommerceProducts({ request, salesChannel }) {
+  const api = useMemo(() => createCommerceApi(request, salesChannel), [request, salesChannel])
   const [categoryId, setCategoryId] = useState('')
   const [subcategoryId, setSubcategoryId] = useState('')
   const [search, setSearch] = useState('')
@@ -38,9 +38,9 @@ export default function Marketplace({ request }) {
   const loadProducts = useCallback(signal => api.getProducts({
     page, pageSize, categoryId, subcategoryId, search,
   }, { signal }), [api, page, categoryId, subcategoryId, search])
-  const categories = useMarketplaceData(loadCategories)
-  const subcategories = useMarketplaceData(loadSubcategories, Boolean(categoryId))
-  const products = useMarketplaceData(loadProducts)
+  const categories = useCommerceData(loadCategories)
+  const subcategories = useCommerceData(loadSubcategories, Boolean(categoryId))
+  const products = useCommerceData(loadProducts)
   const rows = products.data?.rows.map(row => ({
     ...row,
     category: row.category ?? categories.data?.find(category => category.id === String(row.categoryId))?.name,
@@ -49,10 +49,10 @@ export default function Marketplace({ request }) {
 
   return (
     <>
-      <PageHeading eyebrow="MARKETPLACE" title="Products" description="Browse the products listed in the marketplace." />
+      <PageHeading eyebrow={salesChannel.toUpperCase()} title="Products" />
       <DataTable title="Product catalog" rows={rows} columns={columns} pageSize={products.data?.pageSize ?? pageSize} showDetails={false}
         loading={products.loading} error={products.error?.message} onRetry={products.reload}
-        emptyMessage={search || categoryId ? 'No products match these filters.' : 'No marketplace products yet.'}
+        emptyMessage={search || categoryId ? 'No products match these filters.' : `No ${salesChannel} products yet.`}
         pagination={{ page, total: products.data?.total, hasNext: products.data?.hasNext, onChange: setPage }}
         controls={
           <div className="flex flex-wrap items-center gap-2">

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import Icon from './Icon'
 
-export default function MarketplaceCategoryDialog({ mode, row, kind, categories, onSave, onDelete, onClose }) {
+export default function ProductCategoryDialog({ mode, row, kind, categories, onSave, onDelete, onClose }) {
   const ref = useRef(null)
   const titleId = useId()
   const [busy, setBusy] = useState(false)
