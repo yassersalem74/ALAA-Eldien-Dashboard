@@ -1,13 +1,57 @@
+import { useCallback, useMemo, useState } from 'react'
+import { createMarketplaceApi } from '../api/marketplace'
 import DataTable from '../components/DataTable'
-import { Avatar, ExportButton, MetricCard, PageHeading, StatusBadge } from '../components/UI'
-import { money, orders } from '../data/demo'
+import { PageHeading, StatusBadge } from '../components/UI'
+import formatAmount from '../components/formatAmount'
+import useMarketplaceData from '../hooks/useMarketplaceData'
 
+const pageSize = 10
+const statuses = {
+  Pending: 'Pending',
+  Confirmed: 'Confirmed',
+  Processing: 'Processing',
+  Shipped: 'Shipped',
+  Delivered: 'Delivered',
+  CancelledByPartner: 'Cancelled by partner',
+  CancelledByCustomer: 'Cancelled by customer',
+}
+const dateFormat = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'Africa/Cairo' })
 const columns = [
-  { key: 'id', label: 'Order ID', render: row => <span className="font-medium text-[#526d91]">{row.id}</span> },
-  { key: 'customer', label: 'Customer', render: (row, index) => <div className="flex items-center gap-2.5"><Avatar name={row.customer} index={index} /><span className="font-medium text-slate-700">{row.customer}</span></div> },
-  { key: 'date', label: 'Date' }, { key: 'items', label: 'Items' }, { key: 'amount', label: 'Total', render: row => <span className="font-medium text-slate-700">{money(row.amount)}</span> },
-  { key: 'payment', label: 'Payment', render: row => <StatusBadge status={row.payment} /> }, { key: 'status', label: 'Order status', render: row => <StatusBadge status={row.status} /> },
+  { key: 'id', label: 'Order', render: row => <span className="font-semibold text-[#172b46]">{row.number ?? row.id ?? '—'}</span> },
+  { key: 'customer', label: 'Customer' },
+  { key: 'date', label: 'Date', render: row => row.date && Number.isFinite(Date.parse(row.date)) ? dateFormat.format(new Date(row.date)) : '—' },
+  { key: 'items', label: 'Items' },
+  { key: 'amount', label: 'Total', render: row => formatAmount(row.amount, row.currency) },
+  { key: 'payment', label: 'Payment method' },
+  { key: 'status', label: 'Order status', render: row => row.status ? <StatusBadge status={statuses[row.status] ?? row.status} /> : '—' },
 ]
-export default function MarketplaceOrders({ search }) {
-  return <><PageHeading eyebrow="COMMERCE" title="Marketplace orders" description="Follow every order through its journey, all in one view."><ExportButton rows={orders} filename="marketplace-orders" /></PageHeading><div className="mb-6 grid gap-4 sm:grid-cols-3"><MetricCard label="Orders in preview" value={orders.length} icon="orders" detail="Latest marketplace orders" /><MetricCard label="Paid order value" value={money(orders.filter(order => order.payment === 'Paid').reduce((sum, order) => sum + order.amount, 0))} icon="wallet" index={1} detail="Across the demo records" /><MetricCard label="Delivered orders" value={orders.filter(order => order.status === 'Delivered').length} icon="check" index={2} detail="Successfully completed" /></div><DataTable title="Marketplace orders" description="Your latest transactions and fulfillment activity" rows={orders} columns={columns} statuses={['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']} search={search} /></>
+
+export default function MarketplaceOrders({ request }) {
+  const api = useMemo(() => createMarketplaceApi(request), [request])
+  const [page, setPage] = useState(1)
+  const [status, setStatus] = useState('')
+  const loadOrders = useCallback(signal => api.getPartnerOrders({ page, pageSize, status }, { signal }), [api, page, status])
+  const orders = useMarketplaceData(loadOrders)
+  const forbidden = orders.error?.status === 403
+
+  return (
+    <>
+      <PageHeading eyebrow="MARKETPLACE" title="Orders" description="Marketplace orders available to the signed-in partner account." />
+      <DataTable title="Order history" rows={orders.data?.rows} columns={columns} pageSize={pageSize} showDetails={false}
+        loading={orders.loading} error={forbidden ? 'This account does not have access to partner orders.' : orders.error?.message}
+        onRetry={forbidden ? undefined : orders.reload} emptyMessage="No Marketplace orders on this page."
+        description={orders.data?.hasUnclassifiedOrders ? 'Only orders identified as Marketplace are shown.' : undefined}
+        pagination={{ page, hasNext: orders.data?.hasNext, onChange: setPage }}
+        controls={
+          <select className="field" aria-label="Filter orders by status" value={status} onChange={event => {
+            setStatus(event.target.value)
+            setPage(1)
+          }}>
+            <option value="">All statuses</option>
+            {Object.entries(statuses).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+          </select>
+        }
+      />
+    </>
+  )
 }

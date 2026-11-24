@@ -3,7 +3,9 @@ import { signInAdmin } from './api/adminSession'
 import AdminLogin from './pages/AdminLogin'
 import Icon from './components/Icon'
 import EmptyPage from './pages/EmptyPage'
+import Marketplace from './pages/Marketplace'
 import MarketplaceCategories from './pages/MarketplaceCategories'
+import MarketplaceOrders from './pages/MarketplaceOrders'
 
 const navigation = [
   { section: 'Overview', items: [{ path: 'home', label: 'Home', icon: 'home' }] },
@@ -66,6 +68,7 @@ function Dashboard({ session, onSignOut }) {
   useEffect(() => { const navigate = () => { setPath(currentPath()); setMobileOpen(false) }; window.addEventListener('hashchange', navigate); return () => window.removeEventListener('hashchange', navigate) }, [])
   const taxonomyRoute = /^marketplace\/(categories|sub-categories)(?:\/([^/]+))?(?:\/([^/]+)\/form)?$/.exec(path)
   const page = pages.find(item => item.path === (taxonomyRoute ? `marketplace/${taxonomyRoute[1]}` : path))
+  const MarketplacePage = path === 'marketplace/products' ? Marketplace : path === 'marketplace/orders' ? MarketplaceOrders : null
   const section = path === 'home' ? 'Overview' : ['users', 'services', 'appointments'].includes(path) ? 'Management' : 'Commerce'
 
   return <div className="min-h-screen bg-[#f6f7f9] text-slate-800">
@@ -97,7 +100,7 @@ function Dashboard({ session, onSignOut }) {
           <MarketplaceCategories key={path} request={session.request}
             view={taxonomyRoute[1] === 'sub-categories' ? 'subcategories' : 'categories'}
             categoryId={decodePathId(taxonomyRoute[2])} subcategoryId={decodePathId(taxonomyRoute[3])} />
-        ) : page ? <EmptyPage key={path} title={page.label} section={section} /> : <div className="panel p-12 text-center"><h1 className="text-xl font-semibold">Page not found</h1><a href="#/home" className="btn-primary mt-5 inline-flex">Go to Home</a></div>}
+        ) : MarketplacePage ? <MarketplacePage request={session.request} /> : page ? <EmptyPage key={path} title={page.label} section={section} /> : <div className="panel p-12 text-center"><h1 className="text-xl font-semibold">Page not found</h1><a href="#/home" className="btn-primary mt-5 inline-flex">Go to Home</a></div>}
         <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/80 pt-5 text-[10px] text-slate-400"><p>© 2026 Alaa Eldien. All rights reserved.</p><p>Admin dashboard</p></footer>
       </main>
     </div>

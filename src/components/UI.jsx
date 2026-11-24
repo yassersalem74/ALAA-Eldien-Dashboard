@@ -12,6 +12,17 @@ export function Avatar({ name, index = 0 }) {
   const colors = ['bg-[#e5ebf5] text-[#5b739e]', 'bg-[#f2e7d8] text-[#a17d4f]', 'bg-[#e2eee7] text-[#638a76]', 'bg-[#eee5f2] text-[#9873a6]']
   return <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${colors[index % colors.length]}`}>{name.split(' ').map(part => part[0]).slice(0, 2).join('')}</span>
 }
+export function TableThumbnail({ image }) {
+  return (
+    <span className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-md bg-slate-100 text-slate-500">
+      <Icon name="box" size={18} />
+      {image && (
+        <img key={image} className="absolute inset-0 size-full object-cover" src={image} alt="" loading="lazy"
+          onError={event => { event.currentTarget.hidden = true }} />
+      )}
+    </span>
+  )
+}
 export function MetricCard({ label, value, change, icon, detail, index = 0 }) {
   const colors = ['bg-[#edf2f9] text-[#53719e]', 'bg-[#f4eee2] text-[#ae8b45]', 'bg-[#e9f2ee] text-[#57917b]', 'bg-[#eeeaf6] text-[#8d77af]']
   return <div className="panel p-5"><div className="flex items-center justify-between gap-3"><p className="text-[11px] font-medium text-slate-500">{label}</p><div className={`flex h-9 w-9 items-center justify-center rounded-lg ${colors[index % colors.length]}`}><Icon name={icon} size={18} /></div></div><p className="mt-3 text-[27px] font-semibold leading-none tracking-[-0.04em] text-[#172b46]">{value}</p><p className="mt-4 flex items-center gap-1.5 text-[10px] text-slate-400">{change && <span className="flex items-center gap-0.5 font-medium text-emerald-600"><Icon name="arrowUp" size={12} />{change}</span>}{detail || 'vs. last month'}</p></div>

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import Icon from './Icon'
 
-export default function MarketplaceCategoryDialog({ mode, row, kind, onSave, onDelete, onClose }) {
+export default function MarketplaceCategoryDialog({ mode, row, kind, categories, onSave, onDelete, onClose }) {
   const ref = useRef(null)
   const titleId = useId()
   const [busy, setBusy] = useState(false)
@@ -26,6 +26,7 @@ export default function MarketplaceCategoryDialog({ mode, row, kind, onSave, onD
       if (deleting) await onDelete(row)
       else await onSave({
         ...row,
+        categoryId: row.categoryId ?? data.get('categoryId'),
         nameEn: data.get('nameEn').trim(),
         nameAr: data.get('nameAr').trim(),
         image: data.get('imageFile'),
@@ -53,6 +54,14 @@ export default function MarketplaceCategoryDialog({ mode, row, kind, onSave, onD
         <form className="space-y-4" onSubmit={submit}>
           {deleting ? <p className="break-words text-sm">Delete <strong>{row.name}</strong>?</p> : (
             <fieldset disabled={busy} className="grid min-w-0 gap-4">
+              {categories && (
+                <label className="grid gap-2 text-xs font-medium">Parent category
+                  <select className="field w-full" name="categoryId" defaultValue="" required>
+                    <option value="" disabled>Choose a category</option>
+                    {categories.map(category => <option value={category.id} key={category.id}>{category.name}</option>)}
+                  </select>
+                </label>
+              )}
               <label className="grid gap-2 text-xs font-medium">English name
                 <input className="field w-full" name="nameEn" defaultValue={row.nameEn} required />
               </label>

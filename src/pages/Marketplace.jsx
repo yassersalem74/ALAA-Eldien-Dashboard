@@ -1,15 +1,98 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import { categoryRows, createMarketplaceApi } from '../api/marketplace'
+import DataTable from '../components/DataTable'
 import Icon from '../components/Icon'
-import ProductArt from '../components/ProductArt'
-import { DetailDialog, ExportButton, PageHeading, StatusBadge } from '../components/UI'
-import { money, products } from '../data/demo'
+import { PageHeading, TableThumbnail } from '../components/UI'
+import formatAmount from '../components/formatAmount'
+import useMarketplaceData from '../hooks/useMarketplaceData'
 
-export default function Marketplace({ search = '' }) {
-  const [category, setCategory] = useState('All products')
-  const [query, setQuery] = useState('')
-  const [sort, setSort] = useState('Featured')
-  const [selected, setSelected] = useState(null)
-  const filtered = products.filter(item => (category === 'All products' || item.category === category) && [search, query].every(term => `${item.name} ${item.category} ${item.seller}`.toLowerCase().includes(term.toLowerCase())))
-  if (sort !== 'Featured') filtered.sort((a, b) => sort === 'Price: low to high' ? a.price - b.price : b.price - a.price)
-  return <><PageHeading eyebrow="COMMERCE" title="Marketplace" description="A curated view of the products and sellers in your marketplace."><ExportButton rows={products} filename="marketplace" /></PageHeading><div className="mb-6 flex flex-wrap items-center justify-between gap-5 rounded-xl border border-[#e5dfd1] bg-[#f4f0e7] px-6 py-5"><div><p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-[#aa8a4b]">THE ALAA ELDIEN MARKETPLACE</p><h2 className="mt-2 text-lg font-semibold tracking-tight text-[#172b46]">Everyday essentials. Local favorites.</h2><p className="mt-1.5 text-[11px] text-[#8e8270]">{products.length} products · 3 sellers · Thoughtfully brought together.</p></div><a href="#/marketplace-orders" className="btn-secondary !border-[#d8cdb8] !bg-transparent">View orders <Icon name="arrowRight" size={14} /></a></div><div className="mb-5 flex flex-wrap justify-between gap-4"><div className="flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-white p-1">{['All products', 'Home & living', 'Electronics', 'Accessories'].map(item => <button key={item} onClick={() => setCategory(item)} className={`rounded-md px-3 py-2 text-[11px] font-medium ${category === item ? 'bg-[#172b46] text-white' : 'text-slate-500 hover:bg-slate-50'}`}>{item}</button>)}</div><div className="flex flex-wrap gap-2"><input className="field w-40" placeholder="Search products..." aria-label="Search products" value={query} onChange={event => setQuery(event.target.value)} /><select className="field" aria-label="Sort products" value={sort} onChange={event => setSort(event.target.value)}><option>Featured</option><option>Price: low to high</option><option>Price: high to low</option></select></div></div><div className="grid gap-5 sm:grid-cols-2 2xl:grid-cols-3">{filtered.map(product => <article key={product.id} className="panel group overflow-hidden"><div className="relative"><ProductArt product={product} /><div className="absolute left-4 top-4"><StatusBadge status={product.status} /></div><span className="absolute bottom-3 right-3 rounded-md bg-white/80 px-2 py-1 text-[9px] text-slate-500">{product.category}</span></div><div className="p-5"><p className="text-[9px] text-slate-400">{product.seller}</p><h2 className="mt-1.5 text-sm font-semibold text-[#172b46]">{product.name}</h2><div className="mt-3 flex items-center justify-between"><p className="text-sm font-semibold text-[#172b46]">{money(product.price)}</p><p className="text-[10px] text-slate-400">{product.sold} sold</p></div><button className="btn-secondary mt-4 w-full" onClick={() => setSelected(product)}>View product <Icon name="arrowRight" size={13} /></button></div></article>)}</div>{!filtered.length && <div className="panel p-14 text-center text-sm text-slate-500">No products match your search.</div>}{selected && <DetailDialog item={selected} title={selected.name} onClose={() => setSelected(null)} />}</>
+const pageSize = 10
+const columns = [
+  {
+    key: 'name', label: 'Product',
+    render: row => (
+      <div className="flex items-center gap-3">
+        <TableThumbnail image={row.image} />
+        <div className="min-w-0">
+          <p className="max-w-64 whitespace-normal break-words font-semibold text-[#172b46]">{row.name || 'Unnamed product'}</p>
+          {row.id != null && <p className="mt-1 max-w-48 truncate text-[11px] text-slate-500" title={String(row.id)}>{row.id}</p>}
+        </div>
+      </div>
+    ),
+  },
+  { key: 'category', label: 'Category' },
+  { key: 'subcategory', label: 'Subcategory' },
+  { key: 'price', label: 'Price', render: row => formatAmount(row.price, row.currency) },
+  { key: 'quantity', label: 'Quantity' },
+]
+
+export default function Marketplace({ request }) {
+  const api = useMemo(() => createMarketplaceApi(request), [request])
+  const [categoryId, setCategoryId] = useState('')
+  const [subcategoryId, setSubcategoryId] = useState('')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+
+  const loadCategories = useCallback(async signal => categoryRows(await api.getCategories({ signal })), [api])
+  const loadSubcategories = useCallback(async signal => categoryRows(await api.getSubcategories(categoryId, { signal }), true), [api, categoryId])
+  const loadProducts = useCallback(signal => api.getProducts({
+    page, pageSize, categoryId, subcategoryId, search,
+  }, { signal }), [api, page, categoryId, subcategoryId, search])
+  const categories = useMarketplaceData(loadCategories)
+  const subcategories = useMarketplaceData(loadSubcategories, Boolean(categoryId))
+  const products = useMarketplaceData(loadProducts)
+  const rows = products.data?.rows.map(row => ({
+    ...row,
+    category: row.category ?? categories.data?.find(category => category.id === String(row.categoryId))?.name,
+    subcategory: row.subcategory ?? subcategories.data?.find(subcategory => subcategory.id === String(row.subcategoryId))?.name,
+  }))
+
+  return (
+    <>
+      <PageHeading eyebrow="MARKETPLACE" title="Products" description="Browse the products listed in the marketplace." />
+      <DataTable title="Product catalog" rows={rows} columns={columns} pageSize={products.data?.pageSize ?? pageSize} showDetails={false}
+        loading={products.loading} error={products.error?.message} onRetry={products.reload}
+        emptyMessage={search || categoryId ? 'No products match these filters.' : 'No marketplace products yet.'}
+        pagination={{ page, total: products.data?.total, hasNext: products.data?.hasNext, onChange: setPage }}
+        controls={
+          <div className="flex flex-wrap items-center gap-2">
+            <select className="field max-w-44" aria-label="Filter products by category" value={categoryId} onChange={event => {
+              setCategoryId(event.target.value)
+              setSubcategoryId('')
+              setPage(1)
+            }}>
+              <option value="">All categories</option>
+              {categories.data?.map(row => <option value={row.id} key={row.id}>{row.name}</option>)}
+            </select>
+            {categoryId && (
+              <select className="field max-w-44" aria-label="Filter products by subcategory" value={subcategoryId}
+                disabled={subcategories.loading || Boolean(subcategories.error)} onChange={event => {
+                  setSubcategoryId(event.target.value)
+                  setPage(1)
+                }}>
+                <option value="">All subcategories</option>
+                {subcategories.data?.map(row => <option value={row.id} key={row.id}>{row.name}</option>)}
+              </select>
+            )}
+            <form className="flex items-center gap-2" role="search" onSubmit={event => {
+              event.preventDefault()
+              const value = new FormData(event.currentTarget).get('search').trim()
+              setSearch(value)
+              setPage(1)
+            }}>
+              <input className="field w-36 sm:w-44" name="search" type="search" placeholder="Search products" aria-label="Search products" />
+              <button className="btn-secondary" type="submit">
+                <Icon name="search" size={15} /> Search
+              </button>
+            </form>
+            {(categories.error || subcategories.error) && (
+              <button className="btn-secondary" type="button" onClick={categories.error ? categories.reload : subcategories.reload}>
+                <Icon name="refresh" size={15} /> Reload {categories.error ? 'categories' : 'subcategories'}
+              </button>
+            )}
+          </div>
+        }
+      />
+    </>
+  )
 }

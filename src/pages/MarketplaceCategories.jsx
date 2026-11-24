@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
 import { categoryRows, createMarketplaceApi } from '../api/marketplace'
 import useMarketplaceData from '../hooks/useMarketplaceData'
+import DataTable from '../components/DataTable'
 import Icon from '../components/Icon'
-import { PageHeading } from '../components/UI'
+import { PageHeading, TableThumbnail } from '../components/UI'
 import MarketplaceCategoryDialog from '../components/MarketplaceCategoryDialog'
 import MarketplaceFormEditor from '../components/MarketplaceFormEditor'
 
@@ -22,12 +23,14 @@ function StatusPanel({ resource, empty, children }) {
   return children
 }
 
-function CatalogRows({ api, resource, categoryId }) {
+function CatalogRows({ api, resource, categoryId, parents, categoryFilter }) {
   const [dialog, setDialog] = useState(null)
   const [opening, setOpening] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const kind = categoryId ? 'subcategory' : 'category'
+  const isSubcategory = Boolean(parents)
+  const kind = isSubcategory ? 'subcategory' : 'category'
+  const chooseParent = isSubcategory && !categoryId
 
   function finish(notice) {
     setMessage(notice)
@@ -50,10 +53,10 @@ function CatalogRows({ api, resource, categoryId }) {
     setError('')
     try {
       const options = { language: 'ar' }
-      const localized = categoryId
-        ? await api.getSubcategories(categoryId, options)
+      const localized = isSubcategory
+        ? await api.getSubcategories(row.categoryId, options)
         : await api.getCategories(options)
-      const arabic = categoryRows(localized, Boolean(categoryId)).find(item => item.id === row.id)
+      const arabic = categoryRows(localized, isSubcategory).find(item => item.id === row.id)
       openDialog('edit', {
         ...row,
         nameEn: row.nameEn || row.name,
@@ -66,48 +69,59 @@ function CatalogRows({ api, resource, categoryId }) {
     }
   }
 
+  const columns = [
+    {
+      key: 'name', label: isSubcategory ? 'Subcategory' : 'Category',
+      render: row => (
+        <div className="flex items-center gap-3">
+          <TableThumbnail image={row.image} />
+          <span className="max-w-64 whitespace-normal break-words font-semibold text-[#172b46]">{row.name}</span>
+        </div>
+      ),
+    },
+    { key: 'nameAr', label: 'Arabic name', render: row => <span lang="ar" dir="auto">{row.nameAr || '—'}</span> },
+    ...(chooseParent ? [{ key: 'category', label: 'Parent category' }] : []),
+    {
+      key: 'actions', label: 'Actions',
+      render: row => (
+        <div className="flex items-center gap-2">
+          <a className="btn-secondary" href={isSubcategory
+            ? `${subcategoriesPath}/${encodeURIComponent(row.categoryId)}/${encodeURIComponent(row.id)}/form`
+            : `${categoriesPath}/${encodeURIComponent(row.id)}`}>
+            {isSubcategory ? 'Product form' : 'Subcategories'} <Icon name="chevronRight" size={14} />
+          </a>
+          <button className="icon-button disabled:opacity-50" type="button" disabled={opening}
+            aria-label={`Edit ${row.name}`} title={`Edit ${kind}`} onClick={() => edit(row)}><Icon name="edit" size={17} /></button>
+          <button className="icon-button !text-red-700 disabled:opacity-50" type="button" disabled={opening}
+            aria-label={`Delete ${row.name}`} title={`Delete ${kind}`} onClick={() => openDialog('delete', row)}><Icon name="trash" size={17} /></button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs font-medium text-slate-600">{resource.data ? `${resource.data.length} ${categoryId ? 'subcategories' : 'categories'}` : ''}</p>
-        <div className="flex flex-wrap gap-2">
-          <button className="btn-primary" type="button" disabled={opening} onClick={() => openDialog('new')}>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        {categoryFilter || <span />}
+        {isSubcategory && !parents.length && !resource.loading && !resource.error ? (
+          <a className="btn-secondary" href={categoriesPath}>Go to categories <Icon name="chevronRight" size={14} /></a>
+        ) : (
+          <button className="btn-primary" type="button" disabled={opening || isSubcategory && !parents.length}
+            onClick={() => openDialog('new', { categoryId })}>
             <Icon name="plus" size={16} /> Add {kind}
           </button>
-        </div>
+        )}
       </div>
-      {opening && <p role="status" className="mb-4 text-xs text-slate-600">Loading category details...</p>}
+      {opening && <p role="status" className="mb-4 text-xs text-slate-600">Loading {kind} details...</p>}
       {message && <p role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800">{message}</p>}
       {error && <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-xs text-red-700">{error}</p>}
-      <StatusPanel resource={resource} empty={resource.data?.length === 0 && `No ${categoryId ? 'subcategories' : 'marketplace categories'} yet.`}>
-        <ul className="panel divide-y divide-slate-100">
-          {resource.data?.map(row => (
-            <li key={row.id} className="flex flex-wrap items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5">
-              {row.image
-                ? <img className="size-10 rounded-md object-cover" src={row.image} alt="" loading="lazy" />
-                : <span className="grid size-10 shrink-0 place-items-center rounded-md bg-slate-100 text-slate-500"><Icon name="box" size={18} /></span>}
-              <div className="min-w-0 flex-1 basis-32 break-words">
-                <p className="text-sm font-semibold text-[#172b46]">{row.name}</p>
-                {row.nameAr && row.nameAr !== row.name && <p lang="ar" className="mt-1 text-xs text-slate-500">{row.nameAr}</p>}
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button className="icon-button disabled:opacity-50" type="button" disabled={opening}
-                  aria-label={`Edit ${row.name}`} title={`Edit ${kind}`} onClick={() => edit(row)}><Icon name="edit" size={17} /></button>
-                <button className="icon-button !text-red-700 disabled:opacity-50" type="button" disabled={opening}
-                  aria-label={`Delete ${row.name}`} title={`Delete ${kind}`} onClick={() => openDialog('delete', row)}><Icon name="trash" size={17} /></button>
-                <a className="btn-secondary" href={categoryId
-                  ? `${subcategoriesPath}/${encodeURIComponent(categoryId)}/${encodeURIComponent(row.id)}/form`
-                  : `${categoriesPath}/${encodeURIComponent(row.id)}`}>
-                  {categoryId ? 'Product form' : 'Subcategories'} <Icon name="chevronRight" size={14} />
-                </a>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </StatusPanel>
-      {dialog && <MarketplaceCategoryDialog {...dialog} kind={kind} onClose={() => setDialog(null)}
-        onSave={async row => { await api.saveCategory({ ...row, categoryId }); finish(row.id ? 'Changes saved.' : `New ${kind} added.`) }}
-        onDelete={async row => { await api.deleteCategory(row.id, categoryId); finish(`The ${kind} was deleted.`) }} />}
+      <DataTable title={isSubcategory ? 'Subcategory list' : 'Category list'} rows={resource.data} columns={columns}
+        loading={resource.loading} error={resource.error?.message} onRetry={resource.reload} showDetails={false}
+        emptyMessage={isSubcategory ? 'No subcategories yet.' : 'No marketplace categories yet.'} />
+      {dialog && <MarketplaceCategoryDialog {...dialog} kind={kind}
+        categories={chooseParent && dialog.mode === 'new' ? parents : undefined} onClose={() => setDialog(null)}
+        onSave={async row => { await api.saveCategory(row); finish(row.id ? 'Changes saved.' : `New ${kind} added.`) }}
+        onDelete={async row => { await api.deleteCategory(row.id, row.categoryId); finish(`The ${kind} was deleted.`) }} />}
     </>
   )
 }
@@ -115,14 +129,32 @@ function CatalogRows({ api, resource, categoryId }) {
 export default function MarketplaceCategories({ view = 'categories', categoryId, subcategoryId, request }) {
   const api = useMemo(() => createMarketplaceApi(request), [request])
   const loadCategories = useCallback(async signal => categoryRows(await api.getCategories({ signal })), [api])
-  const loadSubcategories = useCallback(async signal => categoryRows(await api.getSubcategories(categoryId, { signal }), true), [api, categoryId])
   const categories = useMarketplaceData(loadCategories)
-  const subcategories = useMarketplaceData(loadSubcategories, Boolean(categoryId))
   const category = categories.data?.find(row => row.id === categoryId)
+  const isSubcategoryView = view === 'subcategories' || Boolean(categoryId)
+  const loadSubcategories = useCallback(async signal => {
+    const parents = categoryId ? [category] : categories.data
+    const groups = await Promise.all(parents.map(async parent => {
+      const data = await api.getSubcategories(parent.id, { signal })
+      return categoryRows(data, true).map(row => ({ ...row, category: parent.name, categoryId: parent.id }))
+    }))
+    return groups.flat()
+  }, [api, categories.data, category, categoryId])
+  const subcategories = useMarketplaceData(loadSubcategories,
+    isSubcategoryView && Boolean(categoryId ? category : categories.data))
   const subcategory = subcategories.data?.find(row => row.id === subcategoryId)
-  const selectSubcategories = view === 'subcategories' && !subcategoryId
-  const pageTitle = subcategoryId ? 'Product form' : categoryId || selectSubcategories ? 'Subcategories' : 'Categories'
+  const pageTitle = subcategoryId ? 'Product form' : isSubcategoryView ? 'Subcategories' : 'Categories'
   const heading = subcategory ? `${subcategory.name} product form` : category && !subcategoryId ? `${category.name} subcategories` : pageTitle
+  const categoryFilter = view === 'subcategories' && (
+    <label className="grid min-w-48 gap-2 text-xs font-medium text-slate-600">Parent category
+      <select className="field" value={categoryId || ''} disabled={categories.loading || Boolean(categories.error)} onChange={event => {
+        window.location.hash = event.target.value ? `${subcategoriesPath}/${encodeURIComponent(event.target.value)}` : subcategoriesPath
+      }}>
+        <option value="">All marketplace categories</option>
+        {categories.data?.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}
+      </select>
+    </label>
+  )
   return (
     <>
       <PageHeading eyebrow="MARKETPLACE" title={heading}>
@@ -130,28 +162,19 @@ export default function MarketplaceCategories({ view = 'categories', categoryId,
           {subcategoryId ? 'Back to subcategories' : 'Back to categories'}
         </a>}
       </PageHeading>
-      {!categoryId && !selectSubcategories ? (
+      {!isSubcategoryView ? (
         <CatalogRows api={api} resource={categories} />
-      ) : (
-        <StatusPanel resource={categories} empty={categories.data?.length === 0 && 'Add a marketplace category before creating subcategories.'}>
-          {selectSubcategories && (
-            <label className="mb-5 grid max-w-sm gap-2 text-xs font-medium">Marketplace category
-              <select className="field w-full" value={categoryId || ''} aria-label="Marketplace category" onChange={event => {
-                window.location.hash = event.target.value ? `${subcategoriesPath}/${encodeURIComponent(event.target.value)}` : subcategoriesPath
-              }}>
-                <option value="">Choose a category</option>
-                {categories.data?.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}
-              </select>
-            </label>
-          )}
-          {categoryId && !category && <p className="panel p-6 text-sm">Marketplace category not found.</p>}
-          {category && !subcategoryId && <CatalogRows api={api} resource={subcategories} categoryId={categoryId} />}
-          {category && subcategoryId && (
-            <StatusPanel resource={subcategories} empty={!subcategories.loading && !subcategory && 'Subcategory not found for this category.'}>
-              {subcategory && <MarketplaceFormEditor api={api} subcategoryId={subcategoryId} />}
-            </StatusPanel>
-          )}
+      ) : subcategoryId ? (
+        <StatusPanel resource={categories} empty={!category && 'Marketplace category not found.'}>
+          <StatusPanel resource={subcategories} empty={!subcategory && 'Subcategory not found for this category.'}>
+            <MarketplaceFormEditor api={api} subcategoryId={subcategoryId} />
+          </StatusPanel>
         </StatusPanel>
+      ) : categoryId && !categories.loading && !categories.error && !category ? (
+        <p className="panel p-6 text-sm">Marketplace category not found.</p>
+      ) : (
+        <CatalogRows api={api} categoryId={categoryId} parents={categories.data ?? []} categoryFilter={categoryFilter}
+          resource={categories.loading || categories.error ? categories : subcategories} />
       )}
     </>
   )
